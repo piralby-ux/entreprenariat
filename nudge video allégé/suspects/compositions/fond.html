@@ -1,0 +1,41 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #0d1230 0%, #151a3c 55%, #24183a 100%); }
+    #fond-lights { position: absolute; inset: 0; }
+    #fond-lights i { position: absolute; border-radius: 50%; }
+  </style>
+  <!-- blue hour of block 1, darkened: one linear gradient, 20 out-of-focus city lights
+       (flat discs, seeded mulberry32 0x5005), sliding a little with the camera drift -->
+  <div id="root" data-composition-id="fond" data-width="1920" data-height="1080">
+    <div id="fond-lights" data-layout-allow-overflow>
+      <i style="left:998px;top:844px;width:21px;height:21px;background:#ffb866;opacity:0.21"></i>
+      <i style="left:691px;top:901px;width:32px;height:32px;background:#ffb866;opacity:0.16"></i>
+      <i style="left:239px;top:476px;width:37px;height:37px;background:#ffd23f;opacity:0.43"></i>
+      <i style="left:917px;top:909px;width:35px;height:35px;background:#ffb866;opacity:0.16"></i>
+      <i style="left:86px;top:963px;width:49px;height:49px;background:#fff3e6;opacity:0.37"></i>
+      <i style="left:883px;top:622px;width:34px;height:34px;background:#fff3e6;opacity:0.36"></i>
+      <i style="left:1246px;top:629px;width:44px;height:44px;background:#ff5d8f;opacity:0.34"></i>
+      <i style="left:206px;top:636px;width:47px;height:47px;background:#3a86ff;opacity:0.23"></i>
+      <i style="left:544px;top:690px;width:17px;height:17px;background:#ff5d8f;opacity:0.21"></i>
+      <i style="left:114px;top:622px;width:32px;height:32px;background:#ffb866;opacity:0.22"></i>
+      <i style="left:1584px;top:648px;width:57px;height:57px;background:#3a86ff;opacity:0.15"></i>
+      <i style="left:694px;top:572px;width:37px;height:37px;background:#ff5d8f;opacity:0.16"></i>
+      <i style="left:1625px;top:896px;width:18px;height:18px;background:#ff5d8f;opacity:0.28"></i>
+      <i style="left:508px;top:471px;width:20px;height:20px;background:#fff3e6;opacity:0.21"></i>
+      <i style="left:1560px;top:734px;width:16px;height:16px;background:#ffb866;opacity:0.39"></i>
+      <i style="left:1625px;top:912px;width:21px;height:21px;background:#fff3e6;opacity:0.40"></i>
+      <i style="left:132px;top:597px;width:23px;height:23px;background:#ffb866;opacity:0.40"></i>
+      <i style="left:1545px;top:850px;width:17px;height:17px;background:#ffb866;opacity:0.18"></i>
+      <i style="left:1182px;top:668px;width:32px;height:32px;background:#3a86ff;opacity:0.28"></i>
+      <i style="left:263px;top:756px;width:27px;height:27px;background:#3a86ff;opacity:0.39"></i>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // the drift (±0.5°) read as a parallax of the far lights: 1° ≈ 40 px
+      tl.fromTo("#fond-lights", { x: 20 }, { x: -20, duration: 30, ease: "power3.inOut" }, 0);
+      window.__timelines["fond"] = tl;
+    })();
+  </script>
+</template>

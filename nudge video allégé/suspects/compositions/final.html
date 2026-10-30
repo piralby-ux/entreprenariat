@@ -1,0 +1,97 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #root { position: absolute; inset: 0; }
+    /* the desaturation flash needs the whole frame, background included: it gets its own copy of the fond */
+    #fin-all { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(180deg, #0d1230 0%, #151a3c 55%, #24183a 100%); }
+    #fin-lights { position: absolute; inset: 0; }
+    #fin-lights i { position: absolute; border-radius: 50%; }
+    #fin-persp { position: absolute; inset: 0; perspective: 1800px; }
+    #fin-shake, #fin-cam { position: absolute; inset: 0; transform-style: preserve-3d; }
+    .fin-k { position: absolute; left: 610px; top: 60px; width: 700px; height: 960px; transform-style: preserve-3d; transform-origin: 50% 100%; }
+    .fin-k .slab i { position: absolute; inset: 0; background: #1a1d29; }
+    .fin-k .face { position: absolute; inset: 0; background: #f1e7d6; overflow: hidden; }
+    .fin-k .band { position: absolute; left: 0; top: 0; width: 700px; height: 220px; border: 10px solid; }
+    .fin-k .nm { position: absolute; left: 24px; top: 236px; width: 652px; font: 64px/84px "Bungee", sans-serif; color: #0a0b0d; white-space: nowrap; }
+    .fin-k .pt { position: absolute; left: 24px; top: 344px; width: 652px; height: 590px; background: #2a2d3d; }
+    .fin-k .sh { position: absolute; left: 196px; top: 120px; width: 260px; height: 470px; }
+    .fin-st {
+      position: absolute; left: 70px; top: 440px; width: 560px; height: 220px; border: 10px solid #ff3c38; color: #ff3c38;
+      font: 72px/92px "Bungee", sans-serif; text-align: center; padding-top: 8px; opacity: 0;
+    }
+  </style>
+  <div id="root" data-composition-id="final" data-width="1920" data-height="1080">
+    <div id="fin-all">
+      <div id="fin-lights" data-layout-allow-overflow>
+        <i style="left:998px;top:844px;width:21px;height:21px;background:#ffb866;opacity:0.21"></i>
+        <i style="left:691px;top:901px;width:32px;height:32px;background:#ffb866;opacity:0.16"></i>
+        <i style="left:239px;top:476px;width:37px;height:37px;background:#ffd23f;opacity:0.43"></i>
+        <i style="left:917px;top:909px;width:35px;height:35px;background:#ffb866;opacity:0.16"></i>
+        <i style="left:86px;top:963px;width:49px;height:49px;background:#fff3e6;opacity:0.37"></i>
+        <i style="left:883px;top:622px;width:34px;height:34px;background:#fff3e6;opacity:0.36"></i>
+        <i style="left:1246px;top:629px;width:44px;height:44px;background:#ff5d8f;opacity:0.34"></i>
+        <i style="left:206px;top:636px;width:47px;height:47px;background:#3a86ff;opacity:0.23"></i>
+        <i style="left:544px;top:690px;width:17px;height:17px;background:#ff5d8f;opacity:0.21"></i>
+        <i style="left:114px;top:622px;width:32px;height:32px;background:#ffb866;opacity:0.22"></i>
+        <i style="left:1584px;top:648px;width:57px;height:57px;background:#3a86ff;opacity:0.15"></i>
+        <i style="left:694px;top:572px;width:37px;height:37px;background:#ff5d8f;opacity:0.16"></i>
+        <i style="left:1625px;top:896px;width:18px;height:18px;background:#ff5d8f;opacity:0.28"></i>
+        <i style="left:508px;top:471px;width:20px;height:20px;background:#fff3e6;opacity:0.21"></i>
+        <i style="left:1560px;top:734px;width:16px;height:16px;background:#ffb866;opacity:0.39"></i>
+        <i style="left:1625px;top:912px;width:21px;height:21px;background:#fff3e6;opacity:0.40"></i>
+        <i style="left:132px;top:597px;width:23px;height:23px;background:#ffb866;opacity:0.40"></i>
+        <i style="left:1545px;top:850px;width:17px;height:17px;background:#ffb866;opacity:0.18"></i>
+        <i style="left:1182px;top:668px;width:32px;height:32px;background:#3a86ff;opacity:0.28"></i>
+        <i style="left:263px;top:756px;width:27px;height:27px;background:#3a86ff;opacity:0.39"></i>
+      </div>
+      <div id="fin-persp">
+        <div id="fin-shake">
+          <div id="fin-cam" data-layout-allow-overlap>
+            <div id="fin-k0" class="fin-k"><div class="slab"></div><div class="face"><div class="band" style="background:#2ec4b6;border-color:#82dcd3 #1e7f76 #1e7f76 #82dcd3"></div><div class="nm">L’INVISIBLE</div><div class="pt"></div><div id="fin-s0" class="fin-st">COUPABLE :<br />PERSONNE</div></div></div>
+            <div id="fin-k1" class="fin-k"><div class="slab"></div><div class="face"><div class="band" style="background:#ffd23f;border-color:#ffe48c #a68929 #a68929 #ffe48c"></div><div class="nm">LE MINIMALISTE</div><div class="pt"></div><div id="fin-s1" class="fin-st">COUPABLE :<br />PERSONNE</div></div></div>
+            <div id="fin-k2" class="fin-k"><div class="slab"></div><div class="face"><div class="band" style="background:#8a5cf6;border-color:#b99dfa #5a3ca0 #5a3ca0 #b99dfa"></div><div class="nm">LE PHILOSOPHE</div><div class="pt"></div><div id="fin-s2" class="fin-st">COUPABLE :<br />PERSONNE</div></div></div>
+            <div id="fin-k3" class="fin-k"><div class="slab"></div><div class="face"><div class="band" style="background:#ff8c42;border-color:#ffba8e #a65b2b #a65b2b #ffba8e"></div><div class="nm">LE CONTRIBUABLE</div><div class="pt"></div><div id="fin-s3" class="fin-st">COUPABLE :<br />PERSONNE</div></div></div>
+            <div id="fin-k4" class="fin-k"><div class="slab"></div><div class="face"><div class="band" style="background:#ff3c38;border-color:#ff8a88 #a62724 #a62724 #ff8a88"></div><div class="nm"><span style="display:inline-block;transform:scaleX(0.84);transform-origin:0 50%">LE PROCRASTINATEUR</span></div><div class="pt"></div><div id="fin-s4" class="fin-st">COUPABLE :<br />PERSONNE</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const ks = [0, 1, 2, 3, 4].map((i) => document.getElementById(`fin-k${i}`));
+      // each fiche: slab of seven 2 px layers, and a suspect silhouette in the portrait
+      ks.forEach((k) => {
+        const slab = k.querySelector(".slab");
+        for (let i = 1; i <= 7; i++) { const l = document.createElement("i"); l.style.transform = `translateZ(${-2 * i}px)`; slab.appendChild(l); }
+        k.querySelector(".pt").innerHTML = '<svg class="sh" viewBox="0 0 260 470"><circle cx="130" cy="110" r="88" fill="#4a4e63"/><path d="M10 470 L10 300 C10 240 60 214 130 214 C200 214 250 240 250 300 L250 470 Z" fill="#4a4e63"/></svg>';
+      });
+      // camera: drift (same formula as every scene) on rotationY, distance on z
+      const cam = { z: -700, ry: -10 }, clock = { t: 0 };
+      const place = () => gsap.set("#fin-cam", { z: cam.z, rotationY: cam.ry + FicheDrift(25.3 + clock.t) });
+      tl.fromTo(clock, { t: 0 }, { t: 4.7, duration: 4.7, ease: "none", onUpdate: place }, 0);
+      tl.fromTo(cam, { z: -700, ry: -10 }, { z: -2290, ry: -4, duration: 0.8, ease: "power3.inOut", onUpdate: place }, 0.9);
+      tl.to(cam, { z: -2380, duration: 1.5, ease: "power3.out", onUpdate: place }, 2.0);
+      // fan in (0–0.9), then a line (0.9–1.7)
+      ks.forEach((k, i) => {
+        const d = i - 2;
+        tl.fromTo(k, { x: d * 150, y: 60, z: -2600, rotationZ: d * 11, opacity: 0 },
+          { z: i * 6, opacity: 1, duration: 0.6, ease: "power3.out" }, 0.08 * i);
+        tl.to(k, { x: d * 780, y: 0, rotationZ: 0, z: 0, duration: 0.8, ease: "power3.inOut" }, 0.9);
+      });
+      // 27.0 s (local 1.7): the stamps, 0.15 s apart, each with a small camera shake
+      ks.forEach((k, i) => {
+        const t = 1.7 + 0.15 * i;
+        tl.fromTo(`#fin-s${i}`, { scale: 2.4, rotation: -24, opacity: 0 }, { scale: 1, rotation: -12, opacity: 0.92, duration: 0.12, ease: "power3.in" }, t - 0.12);
+        tl.to(`#fin-s${i}`, { keyframes: [{ scaleY: 0.92, duration: 0.05 }, { scaleY: 1, duration: 0.1 }], ease: "power2.out" }, t);
+        tl.fromTo("#fin-shake", { x: i % 2 ? -7 : 7, y: -5 }, { x: 0, y: 0, duration: 0.2, ease: "power2.out", immediateRender: false }, t);
+      });
+      // first impact only: the step's desaturation flash from block 1, on the whole frame
+      tl.fromTo("#fin-all", { filter: "saturate(1)" }, { filter: "saturate(0.15)", duration: 0.02, ease: "none" }, 1.68);
+      tl.to("#fin-all", { filter: "saturate(1)", duration: 0.5, ease: "power2.in" }, 1.7);
+      tl.fromTo("#fin-lights", { x: FicheDrift(25.3) * -40 }, { x: FicheDrift(30) * -40, duration: 4.7, ease: "none" }, 0);
+      window.__timelines["final"] = tl;
+    })();
+  </script>
+</template>

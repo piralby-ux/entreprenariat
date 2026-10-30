@@ -1,0 +1,100 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #root { position: absolute; inset: 0; perspective: 1800px; --c: #8a5cf6; --cl: #b99dfa; --cd: #5a3ca0; }
+    #f3-cap1 { left: 18px; top: 10px; }
+    #f3-cap2 { left: 18px; top: 46px; }
+    #f3-bust { position: absolute; left: 40px; top: 96px; width: 170px; height: 220px; }
+    #f3-cal { position: absolute; left: 400px; top: 100px; width: 200px; height: 150px; }
+    #f3-cal .top { position: absolute; left: 0; top: 0; width: 200px; height: 30px; background: #8a5cf6; border: 3px solid #0a0b0d; }
+    #f3-cal .pg {
+      position: absolute; left: 0; top: 30px; width: 200px; height: 120px; background: #fff8ec; border: 3px solid #0a0b0d;
+      border-top: 0; font: 44px/117px "Bungee", sans-serif; text-align: center; color: #0a0b0d; transform-origin: 50% 0;
+    }
+    #f3-walker { position: absolute; left: 0; top: 262px; width: 30px; height: 56px; }
+    #f3-walker .hd { position: absolute; left: 8px; top: 0; width: 14px; height: 14px; background: #0a0b0d; border-radius: 50%; }
+    #f3-walker .bd { position: absolute; left: 9px; top: 15px; width: 12px; height: 22px; background: #0a0b0d; }
+    #f3-walker .lg { position: absolute; left: 12px; top: 35px; width: 6px; height: 21px; background: #0a0b0d; transform-origin: 50% 0; }
+  </style>
+  <div id="root" data-composition-id="fiche-3" data-width="1920" data-height="1080" data-composition-variables='[
+    {"id":"mauvaise_foi_3","type":"number","label":"Philosophe — mauvaise foi","min":0,"max":10,"step":1,"default":5},
+    {"id":"frequence_3","type":"number","label":"Philosophe — fréquence","min":0,"max":10,"step":1,"default":5},
+    {"id":"discretion_3","type":"number","label":"Philosophe — discrétion","min":0,"max":10,"step":1,"default":5},
+    {"id":"citation_3","type":"string","label":"Philosophe — citation","default":"« C’est organique, ça se décompose. »"},
+    {"id":"provisoire_3","type":"boolean","label":"Philosophe — provisoire","default":true},
+    {"id":"interview_src_3","type":"string","label":"Philosophe — interview (vidéo)","default":"assets/chroma-vert.mp4"}
+  ]'>
+    <div id="f3-stage" class="stage">
+      <div id="f3-fiche" class="fiche">
+        <div id="f3-slab" class="slab"></div>
+        <div class="face">
+          <div class="band"><div id="f3-badge" class="badge">PROVISOIRE</div></div>
+          <div class="reel-win"><div id="f3-reel" class="reel"></div></div>
+          <div class="portrait">
+            <div id="f3-cap1" class="cap">Durée de décomposition :</div>
+            <div id="f3-cap2" class="cap">le temps que quelqu’un marche dedans.</div>
+            <!-- marble bust on its plinth -->
+            <svg id="f3-bust" viewBox="0 0 170 220">
+              <rect x="30" y="182" width="110" height="38" fill="#b8b0cc" stroke="#0a0b0d" stroke-width="3" />
+              <rect x="20" y="170" width="130" height="14" fill="#e9e4f2" stroke="#0a0b0d" stroke-width="3" />
+              <path d="M22 170 C26 130 52 118 70 114 L100 114 C118 118 144 130 148 170 Z" fill="#e9e4f2" stroke="#0a0b0d" stroke-width="3" />
+              <rect x="70" y="92" width="30" height="26" fill="#d6cfe4" stroke="#0a0b0d" stroke-width="3" />
+              <ellipse cx="85" cy="58" rx="34" ry="42" fill="#e9e4f2" stroke="#0a0b0d" stroke-width="3" />
+              <path d="M54 44 C62 18 108 16 116 44 C104 34 66 34 54 44 Z" fill="#b8b0cc" stroke="#0a0b0d" stroke-width="2.5" />
+              <path d="M70 62 L80 62 M90 62 L100 62 M85 66 L82 80 L88 80 M76 90 L94 90" stroke="#0a0b0d" stroke-width="3" fill="none" />
+              <path d="M30 150 C50 140 60 160 80 150 M100 136 C110 146 126 140 136 152" stroke="#b8b0cc" stroke-width="2.5" fill="none" />
+            </svg>
+            <div id="f3-cal" data-layout-allow-overlap>
+              <div class="pg">DIM</div>
+              <div id="f3-p5" class="pg">SAM</div>
+              <div id="f3-p4" class="pg">VEN</div>
+              <div id="f3-p3" class="pg">JEU</div>
+              <div id="f3-p2" class="pg">MER</div>
+              <div id="f3-p1" class="pg">MAR</div>
+              <div id="f3-p0" class="pg">LUN</div>
+              <div class="top"></div>
+            </div>
+            <div id="f3-walker"><div id="f3-la" class="lg"></div><div id="f3-lb" class="lg"></div><div class="bd"></div><div class="hd"></div></div>
+          </div>
+          <div class="gauge" style="top:744px"><b>MAUVAISE FOI</b><div class="bar"><div id="f3-g0" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:802px"><b>FRÉQUENCE</b><div class="bar"><div id="f3-g1" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:860px"><b>DISCRÉTION</b><div class="bar"><div id="f3-g2" class="fill"></div><div class="ticks"></div></div></div>
+        </div>
+        <div id="f3-glint" class="glint"></div>
+      </div>
+      <div id="f3-win" class="win">
+        <div class="win-bar">LE PHILOSOPHE</div>
+        <div class="win-screen">
+          <video id="f3-video" class="clip" data-start="1.2" data-duration="3.6" data-var-src="interview_src_3" src="assets/chroma-vert.mp4" muted playsinline></video>
+        </div>
+        <div id="f3-bulbs" class="bulbs"></div>
+      </div>
+      <div id="f3-quote" class="quote" data-var-text="citation_3">« C’est organique, ça se décompose. »</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const vars = window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {};
+      Fiche("f3", 11.5, 2, tl, vars);
+      // gag: the days go by (six pages turn), a tiny pedestrian crosses: that is the decomposition time
+      tl.fromTo("#f3-cap1", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 1.2);
+      for (let k = 0; k < 6; k++) {
+        tl.fromTo(`#f3-p${k}`, { rotationX: 0, opacity: 1 }, { rotationX: -110, duration: 0.25, ease: "power2.in" }, 1.5 + 0.25 * k);
+        tl.to(`#f3-p${k}`, { opacity: 0, duration: 0.05, ease: "none" }, 1.72 + 0.25 * k);
+      }
+      tl.fromTo("#f3-cap2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 2.2);
+      tl.fromTo("#f3-walker", { x: -40 }, { x: 680, duration: 1.5, ease: "none" }, 2.4);
+      const clock = { t: 0 };
+      tl.fromTo(clock, { t: 0 }, {
+        t: 4.8, duration: 4.8, ease: "none",
+        onUpdate: () => {
+          const a = 24 * Math.sin(2 * Math.PI * 3 * Math.max(0, clock.t - 2.4));
+          gsap.set("#f3-la", { rotation: a });
+          gsap.set("#f3-lb", { rotation: -a });
+        },
+      }, 0);
+      window.__timelines["fiche-3"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,82 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #root { position: absolute; inset: 0; perspective: 1800px; --c: #ff3c38; --cl: #ff8a88; --cd: #a62724; }
+    #f5-bag { position: absolute; left: 40px; top: 110px; width: 140px; height: 200px; }
+    #f5-lids { position: absolute; left: 40px; top: 110px; width: 140px; height: 200px; }
+    #f5-lids i { position: absolute; top: 76px; width: 32px; height: 30px; background: #fff8ec; border-bottom: 4px solid #0a0b0d; transform-origin: 50% 0; }
+    #f5-man { position: absolute; left: 220px; top: 70px; width: 110px; height: 250px; }
+    #f5-clock { position: absolute; left: 470px; top: 18px; width: 140px; height: 140px; background: #fff8ec; border: 6px solid #0a0b0d; border-radius: 50%; }
+    #f5-hand { position: absolute; left: 61px; top: 14px; width: 6px; height: 50px; background: #ff3c38; transform-origin: 50% 100%; }
+    #f5-hub { position: absolute; left: 58px; top: 58px; width: 12px; height: 12px; background: #0a0b0d; border-radius: 50%; }
+    #f5-box { position: absolute; left: 380px; top: 196px; width: 40px; height: 40px; border: 5px solid #0a0b0d; background: #fff8ec; }
+    #f5-pick { left: 434px; top: 198px; }
+    #f5-tag {
+      position: absolute; left: 430px; top: 252px; padding: 0 14px; background: #ff3c38; color: #0a0b0d;
+      font: 700 30px/46px "Space Mono", monospace; border: 3px solid #0a0b0d; transform-origin: 0 50%;
+    }
+  </style>
+  <div id="root" data-composition-id="fiche-5" data-width="1920" data-height="1080" data-composition-variables='[
+    {"id":"mauvaise_foi_5","type":"number","label":"Procrastinateur — mauvaise foi","min":0,"max":10,"step":1,"default":5},
+    {"id":"frequence_5","type":"number","label":"Procrastinateur — fréquence","min":0,"max":10,"step":1,"default":5},
+    {"id":"discretion_5","type":"number","label":"Procrastinateur — discrétion","min":0,"max":10,"step":1,"default":5},
+    {"id":"citation_5","type":"string","label":"Procrastinateur — citation","default":"« Pas le temps, j’ai la flemme. »"},
+    {"id":"provisoire_5","type":"boolean","label":"Procrastinateur — provisoire","default":true},
+    {"id":"interview_src_5","type":"string","label":"Procrastinateur — interview (vidéo)","default":"assets/chroma-vert.mp4"}
+  ]'>
+    <div id="f5-stage" class="stage">
+      <div id="f5-fiche" class="fiche">
+        <div id="f5-slab" class="slab"></div>
+        <div class="face">
+          <div class="band"><div id="f5-badge" class="badge">PROVISOIRE</div></div>
+          <div class="reel-win"><div id="f5-reel" class="reel"></div></div>
+          <div class="portrait">
+            <!-- an empty plastic bag with two eyes, waiting -->
+            <svg id="f5-bag" viewBox="0 0 140 200">
+              <path d="M30 4 C18 4 18 40 36 44 M110 4 C122 4 122 40 104 44" stroke="#0a0b0d" stroke-width="5" fill="none" />
+              <path d="M30 4 C44 4 46 40 40 44 M110 4 C96 4 94 40 100 44" stroke="#0a0b0d" stroke-width="5" fill="none" />
+              <path d="M22 44 L118 44 L130 186 C100 198 40 198 10 186 Z" fill="#fff8ec" stroke="#0a0b0d" stroke-width="5" />
+              <path d="M40 140 L52 176 M96 120 L104 160" stroke="#d8cfc0" stroke-width="3" />
+              <circle cx="52" cy="92" r="13" fill="#fff" stroke="#0a0b0d" stroke-width="3" /><circle cx="56" cy="94" r="6" fill="#0a0b0d" />
+              <circle cx="88" cy="92" r="13" fill="#fff" stroke="#0a0b0d" stroke-width="3" /><circle cx="84" cy="94" r="6" fill="#0a0b0d" />
+            </svg>
+            <div id="f5-lids"><i id="f5-ld0" style="left:36px"></i><i id="f5-ld1" style="left:72px"></i></div>
+            <!-- the owner, still -->
+            <svg id="f5-man" viewBox="0 0 110 250">
+              <circle cx="55" cy="34" r="28" fill="#3b3a48" />
+              <path d="M14 250 L14 110 C14 80 30 70 55 70 C80 70 96 80 96 110 L96 250 Z" fill="#3b3a48" />
+            </svg>
+            <div id="f5-clock"><div id="f5-hand"></div><div id="f5-hub"></div></div>
+            <div id="f5-box"></div>
+            <div id="f5-pick" class="cap">ramasser</div>
+            <div id="f5-tag">demain</div>
+          </div>
+          <div class="gauge" style="top:744px"><b>MAUVAISE FOI</b><div class="bar"><div id="f5-g0" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:802px"><b>FRÉQUENCE</b><div class="bar"><div id="f5-g1" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:860px"><b>DISCRÉTION</b><div class="bar"><div id="f5-g2" class="fill"></div><div class="ticks"></div></div></div>
+        </div>
+        <div id="f5-glint" class="glint"></div>
+      </div>
+      <div id="f5-win" class="win">
+        <div class="win-bar">LE PROCRASTINATEUR</div>
+        <div class="win-screen">
+          <video id="f5-video" class="clip" data-start="1.2" data-duration="3.6" data-var-src="interview_src_5" src="assets/chroma-vert.mp4" muted playsinline></video>
+        </div>
+        <div id="f5-bulbs" class="bulbs"></div>
+      </div>
+      <div id="f5-quote" class="quote" data-var-text="citation_5">« Pas le temps, j’ai la flemme. »</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const vars = window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {};
+      Fiche("f5", 20.5, 4, tl, vars);
+      // gag: the bag waits, the clock does three turns and stops, the box stays empty: « demain »
+      tl.fromTo("#f5-hand", { rotation: 0 }, { rotation: 1080, duration: 1.8, ease: "power2.inOut" }, 1.6);
+      [2.0, 3.6].forEach((t) => tl.fromTo(["#f5-ld0", "#f5-ld1"], { scaleY: 0 }, { keyframes: [{ scaleY: 1, duration: 0.07 }, { scaleY: 0, duration: 0.09 }], ease: "power2.inOut", immediateRender: t === 2.0 }, t));
+      tl.fromTo("#f5-tag", { scale: 0, rotation: 0 }, { scale: 1, rotation: -6, duration: 0.3, ease: "back.out(2.2)" }, 3.4);
+      window.__timelines["fiche-5"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,78 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #root { position: absolute; inset: 0; perspective: 1800px; --c: #2ec4b6; --cl: #82dcd3; --cd: #1e7f76; }
+    #f1-ghost { position: absolute; left: 251px; top: 46px; width: 150px; height: 230px; opacity: 0.38; }
+    #f1-ghost .h { position: absolute; left: 40px; top: 0; width: 70px; height: 70px; border: 4px dashed #0a0b0d; border-radius: 50%; }
+    #f1-ghost .b { position: absolute; left: 0; top: 82px; width: 150px; height: 148px; border: 4px dashed #0a0b0d; border-bottom: 0; }
+    .f1-w { position: absolute; width: 72px; height: 84px; background: #24305e; border: 5px solid #0a0b0d; overflow: hidden; }
+    .f1-w .eye { position: absolute; left: 11px; top: 26px; width: 40px; height: 24px; background: #fff8ec; border-radius: 50%; }
+    .f1-w .eye::after { content: ""; position: absolute; left: 13px; top: 5px; width: 14px; height: 14px; background: #0a0b0d; border-radius: 50%; }
+    .f1-w .lid { position: absolute; left: 6px; top: 20px; width: 50px; height: 36px; background: #24305e; border-bottom: 4px solid #fff8ec; transform-origin: 50% 0; }
+    #f1-radar { position: absolute; left: 0; top: 0; width: 90px; height: 330px; }
+    #f1-radar i { position: absolute; right: 0; top: 0; width: 8px; height: 330px; background: #2ec4b6; }
+    #f1-radar b { position: absolute; left: 0; top: 0; width: 82px; height: 330px; background: #2ec4b6; opacity: 0.22; }
+    #f1-count { left: 0; top: 284px; width: 652px; text-align: center; }
+  </style>
+  <div id="root" data-composition-id="fiche-1" data-composition-variables='[
+  {"id":"mauvaise_foi_1","type":"number","label":"Invisible — mauvaise foi","min":0,"max":10,"step":1,"default":5},
+  {"id":"frequence_1","type":"number","label":"Invisible — fréquence","min":0,"max":10,"step":1,"default":5},
+  {"id":"discretion_1","type":"number","label":"Invisible — discrétion","min":0,"max":10,"step":1,"default":5},
+  {"id":"citation_1","type":"string","label":"Invisible — citation","default":"« Personne ne me regarde. »"},
+  {"id":"provisoire_1","type":"boolean","label":"Invisible — provisoire","default":true},
+  {"id":"interview_src_1","type":"string","label":"Invisible — interview (vidéo)","default":"assets/chroma-vert.mp4"}
+]' data-width="1920" data-height="1080">
+    <div id="f1-stage" class="stage">
+      <div id="f1-fiche" class="fiche">
+        <div id="f1-slab" class="slab"></div>
+        <div class="face">
+          <div class="band"><div id="f1-badge" class="badge">PROVISOIRE</div></div>
+          <div class="reel-win"><div id="f1-reel" class="reel"></div></div>
+          <div class="portrait">
+            <div id="f1-ghost"><div class="h"></div><div class="b"></div></div>
+            <div class="f1-w" style="left:24px;top:30px"><div class="eye"></div><div id="f1-l0" class="lid"></div></div>
+            <div class="f1-w" style="left:112px;top:30px"><div class="eye"></div><div id="f1-l1" class="lid"></div></div>
+            <div class="f1-w" style="left:24px;top:140px"><div class="eye"></div><div id="f1-l2" class="lid"></div></div>
+            <div class="f1-w" style="left:112px;top:140px"><div class="eye"></div><div id="f1-l3" class="lid"></div></div>
+            <div class="f1-w" style="left:466px;top:30px"><div class="eye"></div><div id="f1-l4" class="lid"></div></div>
+            <div class="f1-w" style="left:554px;top:30px"><div class="eye"></div><div id="f1-l5" class="lid"></div></div>
+            <div class="f1-w" style="left:466px;top:140px"><div class="eye"></div><div id="f1-l6" class="lid"></div></div>
+            <div class="f1-w" style="left:554px;top:140px"><div class="eye"></div><div id="f1-l7" class="lid"></div></div>
+            <div id="f1-radar"><b></b><i></i></div>
+            <div id="f1-count" class="cap">TÉMOINS : 8</div>
+          </div>
+          <div class="gauge" style="top:744px"><b>MAUVAISE FOI</b><div class="bar"><div id="f1-g0" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:802px"><b>FRÉQUENCE</b><div class="bar"><div id="f1-g1" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:860px"><b>DISCRÉTION</b><div class="bar"><div id="f1-g2" class="fill"></div><div class="ticks"></div></div></div>
+        </div>
+        <div id="f1-glint" class="glint"></div>
+      </div>
+      <div id="f1-win" class="win">
+        <div class="win-bar">L’INVISIBLE</div>
+        <div class="win-screen">
+          <video id="f1-video" class="clip" data-start="1.2" data-duration="3.6" data-var-src="interview_src_1" src="assets/chroma-vert.mp4" muted playsinline></video>
+        </div>
+        <div id="f1-bulbs" class="bulbs"></div>
+      </div>
+      <div id="f1-quote" class="quote" data-var-text="citation_1">« Personne ne me regarde. »</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const vars = window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {};
+      Fiche("f1", 2.5, 0, tl, vars);
+      // gag: a radar sweeps the street; every eye closes as it passes; the witnesses count down to 0
+      tl.fromTo("#f1-radar", { x: -100, opacity: 1 }, { x: 680, duration: 1.6, ease: "none" }, 1.5);
+      const cx = [60, 148, 60, 148, 502, 590, 502, 590];
+      const shut = cx.map((x) => 1.5 + (1.6 * (x + 100)) / 780 + 0.03);
+      shut.forEach((t, i) => tl.fromTo(`#f1-l${i}`, { scaleY: 0 }, { scaleY: 1, duration: 0.12, ease: "power2.in" }, t));
+      const count = document.getElementById("f1-count"), clock = { t: 0 };
+      tl.fromTo(clock, { t: 0 }, {
+        t: 4.8, duration: 4.8, ease: "none",
+        onUpdate: () => { count.textContent = `TÉMOINS : ${8 - shut.filter((s) => clock.t >= s + 0.12).length}`; },
+      }, 0);
+      window.__timelines["fiche-1"] = tl;
+    })();
+  </script>
+</template>

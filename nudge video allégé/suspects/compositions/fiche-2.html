@@ -1,0 +1,78 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #root { position: absolute; inset: 0; perspective: 1800px; --c: #ffd23f; --cl: #ffe48c; --cd: #a68929; }
+    #f2-cap1 { left: 18px; top: 12px; }
+    #f2-strike { position: absolute; left: 18px; top: 28px; width: 540px; height: 4px; background: #e8352a; transform-origin: 0 50%; }
+    #f2-cap2 { left: 18px; top: 52px; }
+    #f2-poop { position: absolute; left: 40px; top: 156px; width: 72px; height: 54px; transform-origin: 30% 100%; }
+    #f2-ruler {
+      position: absolute; left: 24px; top: 210px; width: 200px; height: 44px; transform-origin: 0 50%;
+      background: #ffd23f repeating-linear-gradient(90deg, #0a0b0d 0 3px, transparent 3px 20px); border: 3px solid #0a0b0d;
+    }
+    #f2-cm4, #f2-cm13 { left: 24px; top: 266px; }
+  </style>
+  <div id="root" data-composition-id="fiche-2" data-width="1920" data-height="1080" data-composition-variables='[
+    {"id":"mauvaise_foi_2","type":"number","label":"Minimaliste — mauvaise foi","min":0,"max":10,"step":1,"default":5},
+    {"id":"frequence_2","type":"number","label":"Minimaliste — fréquence","min":0,"max":10,"step":1,"default":5},
+    {"id":"discretion_2","type":"number","label":"Minimaliste — discrétion","min":0,"max":10,"step":1,"default":5},
+    {"id":"citation_2","type":"string","label":"Minimaliste — citation","default":"« Ce n’est qu’un petit chien. »"},
+    {"id":"provisoire_2","type":"boolean","label":"Minimaliste — provisoire","default":true},
+    {"id":"interview_src_2","type":"string","label":"Minimaliste — interview (vidéo)","default":"assets/chroma-vert.mp4"}
+  ]'>
+    <div id="f2-stage" class="stage">
+      <div id="f2-fiche" class="fiche">
+        <div id="f2-slab" class="slab"></div>
+        <div class="face">
+          <div class="band"><div id="f2-badge" class="badge">PROVISOIRE</div></div>
+          <div class="reel-win"><div id="f2-reel" class="reel"></div></div>
+          <div class="portrait">
+            <div id="f2-cap1" class="cap">dimension déclarée : négligeable</div>
+            <div id="f2-strike"></div>
+            <div id="f2-cap2" class="cap">dimension réelle : une autre histoire</div>
+            <!-- block 1's poop: its lathe profile seen from the side, lean included, brown #8a5326 -->
+            <svg id="f2-poop" viewBox="4 0 72 54">
+              <path d="M40.0 52.0 L70.7 52.0 L74.9 47.3 L74.5 41.6 L69.6 36.9 L63.5 35.4 L66.9 31.7 L66.9 26.5 L61.6 22.9 L57.6 21.3 L60.1 18.2 L59.3 13.5 L54.6 10.4 L50.5 7.3 L47.4 3.1 L45.4 1.6 L42.7 3.1 L38.0 7.3 L32.7 10.4 L27.0 13.5 L24.7 18.2 L26.4 21.3 L22.0 22.9 L15.9 26.5 L14.9 31.7 L17.7 35.4 L11.4 36.9 L5.9 41.6 L5.2 47.3 L9.3 52.0 Z" fill="#8a5326" stroke="#0a0b0d" stroke-width="1.5" />
+              <path d="M17.7 35.4 L63.5 35.4 M26.4 21.3 L57.6 21.3" stroke="#6b3f1d" stroke-width="1.6" />
+              <ellipse cx="28" cy="44" rx="8" ry="2.6" fill="#fff3e6" opacity="0.5" />
+              <ellipse cx="33" cy="29" rx="6" ry="2.2" fill="#fff3e6" opacity="0.45" />
+              <ellipse cx="40" cy="15" rx="4" ry="1.8" fill="#fff3e6" opacity="0.4" />
+            </svg>
+            <div id="f2-ruler"></div>
+            <div id="f2-cm4" class="cap">4 cm</div>
+            <div id="f2-cm13" class="cap">13 cm</div>
+          </div>
+          <div class="gauge" style="top:744px"><b>MAUVAISE FOI</b><div class="bar"><div id="f2-g0" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:802px"><b>FRÉQUENCE</b><div class="bar"><div id="f2-g1" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:860px"><b>DISCRÉTION</b><div class="bar"><div id="f2-g2" class="fill"></div><div class="ticks"></div></div></div>
+        </div>
+        <div id="f2-glint" class="glint"></div>
+      </div>
+      <div id="f2-win" class="win">
+        <div class="win-bar">LE MINIMALISTE</div>
+        <div class="win-screen">
+          <video id="f2-video" class="clip" data-start="1.2" data-duration="3.6" data-var-src="interview_src_2" src="assets/chroma-vert.mp4" muted playsinline></video>
+        </div>
+        <div id="f2-bulbs" class="bulbs"></div>
+      </div>
+      <div id="f2-quote" class="quote" data-var-text="citation_2">« Ce n’est qu’un petit chien. »</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const vars = window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {};
+      Fiche("f2", 7.0, 1, tl, vars);
+      // gag: declared size, then the ruler and the poop grow; the first caption gets struck out
+      tl.fromTo(["#f2-poop", "#f2-ruler", "#f2-cm4"], { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 1.2);
+      tl.fromTo("#f2-cap1", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 1.3);
+      tl.fromTo("#f2-ruler", { scaleX: 1 }, { scaleX: 3.0, duration: 0.4, ease: "power3.inOut" }, 1.9);
+      tl.fromTo("#f2-poop", { scale: 1 }, { scale: 2.1, duration: 0.4, ease: "back.out(2)" }, 1.9);
+      tl.fromTo("#f2-cm4", { opacity: 1 }, { opacity: 0, duration: 0.12, ease: "power2.in", immediateRender: false }, 2.05);
+      tl.fromTo("#f2-cm13", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 2.2);
+      tl.fromTo("#f2-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.25, ease: "power3.out" }, 2.3);
+      tl.fromTo("#f2-cap2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 2.3);
+      window.__timelines["fiche-2"] = tl;
+    })();
+  </script>
+</template>

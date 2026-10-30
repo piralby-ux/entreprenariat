@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="fr" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --void: #0a0b0d;
+        --grey: #c0c0c0;
+        --brown: #6b3f1d;
+        --yellow: #ffd23f;
+        --font-hud: "Space Mono", monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--void);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: var(--void);
+      }
+      #scene3d {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+      }
+      @font-face {
+        font-family: "Bungee";
+        src: url("assets/fonts/Bungee-Regular.ttf") format("truetype");
+      }
+      @font-face {
+        font-family: "Ultra";
+        src: url("assets/fonts/Ultra-Regular.ttf") format("truetype");
+      }
+      /* the slot: a one-reel slot machine pops on the frozen frame, spins 0 → 1, wins, then
+         shrinks into the HUD. Box centre = digit centre = frame centre (960, 540). */
+      #slot {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+      }
+      #slot-box {
+        position: absolute;
+        left: 790px;
+        top: 330px;
+        width: 340px;
+        height: 420px;
+      }
+      #slot-cab {
+        position: absolute;
+        inset: 0;
+        background: #ff3c38;
+        border: 14px solid #ffd23f;
+        border-radius: 40px;
+        box-shadow: 0 18px 0 #6b1d1a;
+      }
+      .bulb {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        margin: -10px 0 0 -10px;
+        border-radius: 50%;
+        background: #7a5a10;
+      }
+      #slot-winbg {
+        position: absolute;
+        left: 40px;
+        top: 60px;
+        width: 260px;
+        height: 300px;
+        border-radius: 20px;
+        background: #160d2e;
+        border: 6px solid #0a0b0d;
+      }
+      #slot-window {
+        position: absolute;
+        left: 40px;
+        top: 60px;
+        width: 260px;
+        height: 300px;
+        border-radius: 20px;
+        overflow: hidden;
+      }
+      #slot-strip {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        font-family: "Bungee", sans-serif;
+        font-size: 250px;
+        color: #ffffff;
+        text-align: center;
+      }
+      #slot-strip span {
+        display: block;
+        height: 300px;
+        line-height: 330px;
+      }
+      #slot-glass {
+        position: absolute;
+        left: 40px;
+        top: 60px;
+        width: 260px;
+        height: 300px;
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(10, 11, 13, 0.75) 0%, rgba(10, 11, 13, 0) 22%, rgba(255, 255, 255, 0.08) 50%, rgba(10, 11, 13, 0) 78%, rgba(10, 11, 13, 0.75) 100%);
+      }
+      #slot-plus {
+        position: absolute;
+        left: 1200px;
+        top: 250px;
+        font-family: "Bungee", sans-serif;
+        font-size: 110px;
+        line-height: 1;
+        color: #ffd23f;
+        -webkit-text-stroke: 10px #0a0b0d;
+        paint-order: stroke fill;
+        text-shadow: 0 10px 0 #6b1d1a;
+        opacity: 0;
+      }
+      #hud {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+      }
+      /* not a box: a soft corner shade so the count reads over the bright city */
+      #hud-shade {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 1100px;
+        height: 620px;
+        background: radial-gradient(ellipse at 0% 100%, rgba(10, 11, 13, 0.82) 0%, rgba(10, 11, 13, 0.55) 38%, rgba(10, 11, 13, 0) 72%);
+        opacity: 0;
+      }
+      #hud-inner {
+        position: absolute;
+        left: 112px;
+        bottom: 104px;
+        font-family: var(--font-hud);
+        color: var(--grey);
+      }
+      #hud-label {
+        font-size: 28px;
+        font-weight: 400;
+        letter-spacing: 0.18em;
+        opacity: 0;
+        margin-bottom: 4px;
+      }
+      #hud-count {
+        font-size: 96px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        white-space: pre;
+        font-variant-numeric: tabular-nums;
+        opacity: 0;
+      }
+      /* the final card: a cartoon cast-iron weight marked « 5 TONNES » falls on the city */
+      #final {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+      }
+      #final-scrim {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 48%, rgba(10, 11, 13, 0.8) 0%, rgba(10, 11, 13, 0.62) 45%, rgba(10, 11, 13, 0.35) 100%);
+        opacity: 0;
+      }
+      #final-cracks {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+      }
+      .puff {
+        position: absolute;
+        width: 260px;
+        height: 150px;
+        margin: -75px 0 0 -130px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at 50% 55%, rgba(214, 198, 170, 0.95) 0%, rgba(214, 198, 170, 0.6) 45%, rgba(214, 198, 170, 0) 72%);
+        opacity: 0;
+      }
+      #final-weight {
+        position: absolute;
+        left: 460px;
+        top: 250px;
+        width: 1000px;
+        height: 460px;
+      }
+      #final-handle {
+        position: absolute;
+        left: 390px;
+        top: 0;
+        width: 220px;
+        height: 170px;
+        border: 40px solid #2a2b33;
+        border-bottom: none;
+        border-radius: 110px 110px 0 0;
+      }
+      #final-iron {
+        position: absolute;
+        left: 0;
+        top: 130px;
+        width: 1000px;
+        height: 330px;
+        background: #33343d;
+        clip-path: polygon(13% 0, 87% 0, 100% 100%, 0 100%);
+      }
+      #final-bevel {
+        position: absolute;
+        left: 0;
+        top: 130px;
+        width: 1000px;
+        height: 30px;
+        background: #5a5b67;
+        clip-path: polygon(13% 0, 87% 0, 88.2% 100%, 11.8% 100%);
+      }
+      #final-label {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 262px;
+        text-align: center;
+        font-family: "Ultra", serif;
+        font-size: 124px;
+        line-height: 1;
+        color: #efe6d4;
+        text-shadow: 0 -5px 0 #15151a, 0 4px 0 #6d6e7a;
+      }
+      #final-sub {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 755px;
+        text-align: center;
+        font-family: var(--font-hud);
+        font-weight: 700;
+        font-size: 46px;
+        line-height: 1.3;
+        color: #f1e7d6;
+      }
+      #final-sub-in {
+        display: inline-block;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-ofop"
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="18.5"
+      data-fps="60"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div data-hf-id="hf-wx2v"
+        id="scene3d"
+        data-composition-id="scene3d"
+        data-composition-src="compositions/scene3d.html"
+        data-start="0"
+        data-duration="18.5"
+        data-track-index="1"
+        data-track-kind="graphics"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+      <div
+        id="slot"
+        class="clip"
+        data-start="3.0"
+        data-duration="1.76"
+        data-track-index="3"
+        data-track-kind="graphics"
+        data-layout-allow-overlap
+        data-layout-allow-overflow
+      >
+        <div id="slot-box">
+          <div id="slot-cab">
+            <!-- 20 bulbs, clockwise from the top-left, chased by the timeline -->
+            <span class="bulb" style="left: 43px; top: -7px"></span>
+            <span class="bulb" style="left: 103px; top: -7px"></span>
+            <span class="bulb" style="left: 163px; top: -7px"></span>
+            <span class="bulb" style="left: 223px; top: -7px"></span>
+            <span class="bulb" style="left: 283px; top: -7px"></span>
+            <span class="bulb" style="left: 319px; top: 56px"></span>
+            <span class="bulb" style="left: 319px; top: 126px"></span>
+            <span class="bulb" style="left: 319px; top: 196px"></span>
+            <span class="bulb" style="left: 319px; top: 266px"></span>
+            <span class="bulb" style="left: 319px; top: 336px"></span>
+            <span class="bulb" style="left: 283px; top: 399px"></span>
+            <span class="bulb" style="left: 223px; top: 399px"></span>
+            <span class="bulb" style="left: 163px; top: 399px"></span>
+            <span class="bulb" style="left: 103px; top: 399px"></span>
+            <span class="bulb" style="left: 43px; top: 399px"></span>
+            <span class="bulb" style="left: -7px; top: 336px"></span>
+            <span class="bulb" style="left: -7px; top: 266px"></span>
+            <span class="bulb" style="left: -7px; top: 196px"></span>
+            <span class="bulb" style="left: -7px; top: 126px"></span>
+            <span class="bulb" style="left: -7px; top: 56px"></span>
+          </div>
+          <div id="slot-winbg"></div>
+          <div id="slot-window">
+            <div id="slot-strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span><span>1</span><span>2</span></div>
+          </div>
+          <div id="slot-glass"></div>
+        </div>
+        <div id="slot-plus">+1</div>
+      </div>
+      <div data-hf-id="hf-51ap"
+        id="hud"
+        class="clip"
+        data-start="4.6"
+        data-duration="10.95"
+        data-track-index="2"
+        data-track-kind="graphics"
+      >
+        <div data-hf-id="hf-3w68" id="hud-shade"></div>
+        <div data-hf-id="hf-07pb" id="hud-inner">
+          <div data-hf-id="hf-wpvf" id="hud-label">DÉJECTIONS CANINES</div>
+          <div data-hf-id="hf-be7h" id="hud-count">1</div>
+        </div>
+      </div>
+      <!-- the answer: we stop counting, we weigh -->
+      <div
+        id="final"
+        class="clip"
+        data-start="15.1"
+        data-duration="3.4"
+        data-track-index="4"
+        data-track-kind="graphics"
+        data-layout-allow-overlap
+      >
+        <div id="final-scrim"></div>
+        <svg id="final-cracks" viewBox="0 0 1920 1080" aria-hidden="true">
+          <g fill="none" stroke="#0a0b0d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+            <path class="crack" pathLength="1" d="M 470 712 L 380 730 L 300 722 L 190 760 L 90 752" />
+            <path class="crack" pathLength="1" d="M 560 714 L 500 770 L 520 830 L 450 920" />
+            <path class="crack" pathLength="1" d="M 820 716 L 800 790 L 840 860 L 810 960 L 830 1080" />
+            <path class="crack" pathLength="1" d="M 1080 716 L 1120 800 L 1090 880 L 1150 1000" />
+            <path class="crack" pathLength="1" d="M 1360 714 L 1420 780 L 1400 850 L 1500 930" />
+            <path class="crack" pathLength="1" d="M 1450 712 L 1560 735 L 1640 718 L 1760 750 L 1860 742" />
+          </g>
+        </svg>
+        <span class="puff" style="left: 420px; top: 690px"></span>
+        <span class="puff" style="left: 600px; top: 712px"></span>
+        <span class="puff" style="left: 780px; top: 722px"></span>
+        <span class="puff" style="left: 1140px; top: 722px"></span>
+        <span class="puff" style="left: 1320px; top: 712px"></span>
+        <span class="puff" style="left: 1500px; top: 690px"></span>
+        <div id="final-weight">
+          <div id="final-handle"></div>
+          <div id="final-iron"></div>
+          <div id="final-bevel"></div>
+          <div id="final-label">5 TONNES</div>
+        </div>
+        <div id="final-sub"><span id="final-sub-in">de déjections canines non ramassées<br />chaque année à Toulouse</span></div>
+      </div>
+      <!-- sound design: every clip peaks one frame after its picture (cue sheet in SPEC.md) -->
+      <audio id="sfx-bird-1" src="assets/sfx/bird-chirp.mp3" data-start="0" data-duration="1.07" data-volume="3.2" data-track-index="10"></audio>
+      <audio id="sfx-step-1" src="assets/sfx/footstep-gravel.mp3" data-start="0.109" data-duration="0.57" data-volume="0.42" data-track-index="11"></audio>
+      <audio id="sfx-step-2" src="assets/sfx/footstep-gravel.mp3" data-start="0.639" data-duration="0.57" data-volume="0.34" data-track-index="12"></audio>
+      <audio id="sfx-step-3" src="assets/sfx/footstep-gravel.mp3" data-start="1.169" data-duration="0.57" data-volume="0.42" data-track-index="10"></audio>
+      <audio id="sfx-bird-2" src="assets/sfx/bird-chirp.mp3" data-start="1.176" data-duration="1.07" data-volume="2.4" data-track-index="11"></audio>
+      <audio id="sfx-step-4" src="assets/sfx/footstep-gravel.mp3" data-start="1.699" data-duration="0.57" data-volume="0.34" data-track-index="12"></audio>
+      <audio id="sfx-step-5" src="assets/sfx/footstep-gravel.mp3" data-start="2.229" data-duration="0.57" data-volume="0.42" data-track-index="10"></audio>
+      <audio id="sfx-foot-swing" src="assets/sfx/whoosh-short.mp3" data-start="2.805" data-duration="0.57" data-volume="0.22" data-track-index="10"></audio>
+      <audio id="sfx-step-hit" src="assets/sfx/footstep-gravel.mp3" data-start="2.889" data-duration="0.57" data-volume="0.9" data-track-index="11"></audio>
+      <audio id="sfx-step-thud" src="assets/sfx/impact-bass-1.mp3" data-start="2.944" data-duration="1.6" data-volume="0.5" data-track-index="12"></audio>
+      <audio id="sfx-slot-reel" src="assets/sfx/poker-reels-long.wav" data-start="2.966" data-duration="0.64" data-volume="1.3" data-track-index="13"></audio>
+      <audio id="sfx-slot-in" src="assets/sfx/whoosh-short.mp3" data-start="3.055" data-duration="0.57" data-volume="0.3" data-track-index="14"></audio>
+      <audio id="sfx-slot-stop" src="assets/sfx/impact-bass-1.mp3" data-start="3.684" data-duration="1" data-volume="0.3" data-track-index="10"></audio>
+      <audio id="sfx-slot-plus" src="assets/sfx/pop-hi.wav" data-start="3.709" data-duration="0.77" data-volume="0.55" data-track-index="11"></audio>
+      <audio id="sfx-slot-win" src="assets/sfx/sparkle.mp3" data-start="3.75" data-duration="1.8" data-volume="0.4" data-track-index="13"></audio>
+      <audio id="sfx-to-hud" src="assets/sfx/whoosh-short.mp3" data-start="4.355" data-duration="0.57" data-volume="0.26" data-track-index="14"></audio>
+      <audio id="sfx-wave" src="assets/sfx/whoosh.mp3" data-start="4.575" data-duration="0.57" data-volume="0.3" data-track-index="11"></audio>
+      <audio id="sfx-crane" src="assets/sfx/whoosh-cinematic.mp3" data-start="4.614" data-duration="5.54" data-volume="0.28" data-track-index="12"></audio>
+      <audio id="sfx-wire" src="assets/sfx/glitch-3.mp3" data-start="5.275" data-duration="3.1" data-volume="0.28" data-track-index="10"></audio>
+      <audio id="sfx-poop-01" src="assets/sfx/pop.mp3" data-start="8.077" data-duration="0.72" data-volume="0.38" data-track-index="11"></audio>
+      <audio id="sfx-poop-02" src="assets/sfx/pop-hi.wav" data-start="8.269" data-duration="0.77" data-volume="0.392" data-track-index="13"></audio>
+      <audio id="sfx-poop-03" src="assets/sfx/pop-lo.wav" data-start="8.43" data-duration="0.77" data-volume="0.404" data-track-index="10"></audio>
+      <audio id="sfx-poop-04" src="assets/sfx/pop.mp3" data-start="8.617" data-duration="0.72" data-volume="0.41600000000000004" data-track-index="14"></audio>
+      <audio id="sfx-poop-05" src="assets/sfx/pop-hi.wav" data-start="8.809" data-duration="0.77" data-volume="0.428" data-track-index="11"></audio>
+      <audio id="sfx-poop-06" src="assets/sfx/pop-lo.wav" data-start="8.97" data-duration="0.77" data-volume="0.44" data-track-index="15"></audio>
+      <audio id="sfx-poop-07" src="assets/sfx/pop.mp3" data-start="9.157" data-duration="0.72" data-volume="0.452" data-track-index="13"></audio>
+      <audio id="sfx-poop-08" src="assets/sfx/pop-hi.wav" data-start="9.349" data-duration="0.77" data-volume="0.464" data-track-index="10"></audio>
+      <audio id="sfx-poop-09" src="assets/sfx/pop-lo.wav" data-start="9.51" data-duration="0.77" data-volume="0.476" data-track-index="14"></audio>
+      <audio id="sfx-poop-10" src="assets/sfx/pop.mp3" data-start="9.697" data-duration="0.72" data-volume="0.488" data-track-index="11"></audio>
+      <audio id="sfx-poop-11" src="assets/sfx/pop-hi.wav" data-start="9.889" data-duration="0.77" data-volume="0.5" data-track-index="13"></audio>
+      <audio id="sfx-poop-12" src="assets/sfx/pop-lo.wav" data-start="10.05" data-duration="0.77" data-volume="0.512" data-track-index="15"></audio>
+      <audio id="sfx-poop-13" src="assets/sfx/pop.mp3" data-start="10.237" data-duration="0.72" data-volume="0.524" data-track-index="10"></audio>
+      <audio id="sfx-poop-14" src="assets/sfx/pop-hi.wav" data-start="10.429" data-duration="0.77" data-volume="0.536" data-track-index="11"></audio>
+      <audio id="sfx-rise" src="assets/sfx/whoosh-cinematic.mp3" data-start="10.814" data-duration="5.54" data-volume="0.24" data-track-index="12"></audio>
+      <audio id="sfx-riser" src="assets/sfx/riser.mp3" data-start="12.025" data-duration="3.475" data-volume="0.3" data-track-index="10"></audio>
+      <audio id="sfx-wave-pop-1" src="assets/sfx/pop-hi.wav" data-start="12.059" data-duration="0.77" data-volume="0.2" data-track-index="11"></audio>
+      <audio id="sfx-wave-pop-2" src="assets/sfx/pop-lo.wav" data-start="12.29" data-duration="0.77" data-volume="0.23" data-track-index="13"></audio>
+      <audio id="sfx-wave-pop-3" src="assets/sfx/pop.mp3" data-start="12.547" data-duration="0.72" data-volume="0.26" data-track-index="14"></audio>
+      <audio id="sfx-wave-pop-4" src="assets/sfx/pop-hi.wav" data-start="12.809" data-duration="0.77" data-volume="0.29000000000000004" data-track-index="15"></audio>
+      <audio id="sfx-wave-pop-5" src="assets/sfx/pop-lo.wav" data-start="13.04" data-duration="0.77" data-volume="0.32" data-track-index="11"></audio>
+      <audio id="sfx-reels" src="assets/sfx/poker-reels-long.wav" data-start="13.546" data-duration="1.874" data-volume="1.3" data-track-index="13"></audio>
+      <audio id="sfx-weight-whistle" src="assets/sfx/fs-whistle-end.wav" data-start="14.117" data-duration="1.4" data-volume="2.2" data-track-index="11"></audio>
+      <audio id="sfx-weight-thud" src="assets/sfx/fs-dino-hit.wav" data-start="14.997" data-duration="2.6" data-volume="1.8" data-track-index="14"></audio>
+      <audio id="sfx-weight-debris" src="assets/sfx/fs-debris.mp3" data-start="15.367" data-duration="3.133" data-volume="1.3" data-track-index="15"></audio>
+      <audio id="sfx-weight-clang" src="assets/sfx/fs-metal-bang.mp3" data-start="15.467" data-duration="2.99" data-volume="1.3" data-track-index="13"></audio>
+      <audio id="sfx-weight-rumble" src="assets/sfx/fs-rumble.mp3" data-start="15.477" data-duration="3.023" data-volume="0.85" data-track-index="16"></audio>
+    </div>
+    <script>
+      // HUD: the count is read from the 3D scene's pure count(t), so it always matches the pops.
+      const tl = gsap.timeline({ paused: true });
+      const countEl = document.getElementById("hud-count");
+      // From RUN the count stops tracking the pops and runs away (cubic), so it never settles on
+      // a number; from REEL its low digits spin like slot reels, more and more of them, until the
+      // whole number is a blur at POP, where « 5 TONNES » replaces it. Pure in t: the spinning
+      // digits are a hash of the 60 fps frame index and the digit position.
+      const RUN = 14.0, REEL = 14.7, POP = 15.45;
+      const hash = (a) => {
+        let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b);
+        h ^= h >>> 13;
+        h = Math.imul(h, 0xc2b2ae35);
+        h ^= h >>> 16;
+        return (h >>> 0) / 4294967296;
+      };
+      const display = (t, base) => {
+        const run = Math.max(0, t - RUN);
+        let s = String(Math.max(1, Math.floor(base * (1 + 1.5 * run + 2.2 * run * run * run))));
+        if (t >= REEL) {
+          const f = Math.floor(t * 60);
+          const nSpin = Math.min(s.length, 1 + Math.floor(((t - REEL) / (POP - REEL)) * s.length * 1.2));
+          s = s.split("").map((ch, i) => (i >= s.length - nSpin ? String(Math.floor(hash(f * 37 + i) * 10)) : ch)).join("");
+        }
+        return s.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      };
+      const bulbs = Array.from(document.querySelectorAll("#slot-cab .bulb"));
+      const clock = { t: 0 };
+      tl.to(
+        clock,
+        {
+          t: 18.5,
+          duration: 18.5,
+          ease: "none",
+          onUpdate: () => {
+            const api = window.__demineur;
+            const t = tl.time();
+            countEl.textContent = display(t, api && api.count ? api.count(t) : 1);
+            // slot bulbs: a 4-step chase while the reel spins, all blinking at 12 Hz on the win
+            if (t >= 3.0 && t < 4.76) {
+              const chase = Math.floor(t * 24), blink = Math.floor(t * 12) % 2 === 0;
+              bulbs.forEach((b, i) => {
+                const on = t < 3.74 ? (((i - chase) % 4) + 4) % 4 === 0 : blink;
+                b.style.backgroundColor = on ? "#fff6c8" : "#7a5a10";
+              });
+            }
+          },
+        },
+        0,
+      );
+
+      // --- slot (3.0 → 4.76): the machine pops up, the reel spins 0 → 1 (21 cells of 300 px),
+      // jackpot flash and « +1 », then the reel shrinks into the HUD slot (count centre 140.8, 928)
+      tl.set("#slot-plus", { opacity: 0 }, 3.0);
+      tl.fromTo("#slot-box", { x: 0, y: 140, scale: 0.15, rotation: -14, opacity: 1, transformOrigin: "50% 50%" }, { y: 0, scale: 1.3, rotation: 0, duration: 0.26, ease: "back.out(2.2)" }, 3.02);
+      tl.fromTo("#slot-strip", { y: 0, filter: "blur(0px)" }, { y: -6300, duration: 0.64, ease: "back.out(1.1)" }, 3.1);
+      tl.to("#slot-strip", { filter: "blur(8px)", duration: 0.1, ease: "power1.in" }, 3.1);
+      tl.to("#slot-strip", { filter: "blur(0px)", duration: 0.22, ease: "power2.in" }, 3.44);
+      tl.to("#slot-box", { keyframes: [{ scale: 1.46, rotation: -3, duration: 0.06 }, { scale: 1.25, rotation: 2, duration: 0.08 }, { scale: 1.3, rotation: 0, duration: 0.12 }] }, 3.74);
+      tl.set("#slot-plus", { opacity: 1 }, 3.76);
+      tl.fromTo("#slot-plus", { y: 40, scale: 0.3, rotation: -12, immediateRender: false }, { y: -30, scale: 1, rotation: 6, duration: 0.25, ease: "back.out(3)" }, 3.76);
+      tl.to("#slot-plus", { y: -120, opacity: 0, duration: 0.3, ease: "power2.in" }, 4.08);
+      tl.to(["#slot-cab", "#slot-winbg", "#slot-glass"], { opacity: 0, duration: 0.2, ease: "power1.in" }, 4.3);
+      tl.to("#slot-box", { x: -819.2, y: 388, scale: 0.384, duration: 0.42, ease: "power3.inOut" }, 4.28);
+      tl.to("#slot-strip", { color: "#c0c0c0", duration: 0.3, ease: "none" }, 4.36);
+      tl.to("#slot-box", { opacity: 0, duration: 0.06, ease: "none" }, 4.7);
+
+      // --- HUD takes over exactly where the 1 lands
+      tl.fromTo("#hud-count", { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "none" }, 4.66);
+      tl.fromTo("#hud-label", { opacity: 0 }, { opacity: 0.6, duration: 0.25, ease: "power1.out" }, 4.75);
+      // the shade arrives with the bright city (act 5), not before
+      tl.fromTo("#hud-shade", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power1.inOut" }, 11.9);
+
+      // --- the counter boils over (14.9 → 15.45), then « 5 TONNES » slams in its place
+      tl.fromTo("#hud-count", { scale: 1, transformOrigin: "0% 100%" }, { scale: 1.18, duration: 0.5, ease: "power2.in" }, 14.9);
+      tl.fromTo("#hud-inner", { x: 0 }, { keyframes: [{ x: -4, duration: 0.03 }, { x: 5, duration: 0.03 }, { x: -3, duration: 0.03 }, { x: 4, duration: 0.03 }, { x: -5, duration: 0.03 }, { x: 3, duration: 0.03 }, { x: 0, duration: 0.03 }] }, 15.2);
+      tl.to("#hud-inner", { opacity: 0, scale: 1.3, transformOrigin: "0% 100%", duration: 0.08, ease: "power1.in" }, 15.42);
+      // the weight: free fall (power2.in) 15.28 → 15.48, lands flat and squats, the world shakes,
+      // the ground cracks and dust rolls out from under it
+      tl.set("#final-sub-in", { opacity: 0 }, 15.1);
+      tl.set(".puff", { opacity: 0 }, 15.1);
+      tl.set(".crack", { strokeDasharray: 1, strokeDashoffset: 1 }, 15.1);
+      tl.fromTo("#final-scrim", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 15.1);
+      tl.fromTo("#final-weight", { y: -1150, rotation: -5, scaleX: 1, scaleY: 1, transformOrigin: "50% 100%" }, { y: 0, rotation: 0, duration: 0.2, ease: "power2.in" }, 15.28);
+      tl.to("#final-weight", { keyframes: [{ scaleX: 1.06, scaleY: 0.88, duration: 0.05, ease: "power1.out" }, { scaleX: 0.99, scaleY: 1.02, duration: 0.1, ease: "power1.inOut" }, { scaleX: 1, scaleY: 1, duration: 0.14, ease: "power1.out" }] }, 15.48);
+      tl.fromTo("#scene3d", { x: 0, y: 0 }, { keyframes: [{ x: -14, y: 10, duration: 0.03 }, { x: 12, y: -8, duration: 0.04 }, { x: -8, y: 6, duration: 0.04 }, { x: 5, y: -3, duration: 0.05 }, { x: 0, y: 0, duration: 0.06 }] }, 15.48);
+      tl.to(".crack", { strokeDashoffset: 0, duration: 0.16, ease: "power2.out", stagger: 0.02 }, 15.48);
+      gsap.utils.toArray(".puff").forEach((p, i) => {
+        const side = i < 3 ? -1 : 1, far = i === 0 || i === 5 ? 1.4 : i === 2 || i === 3 ? 0.6 : 1;
+        tl.set(p, { opacity: 0.95 }, 15.48);
+        tl.fromTo(p, { x: 0, y: 0, scale: 0.3, immediateRender: false }, { x: side * 150 * far, y: -40, scale: 1.7, opacity: 0, duration: 0.95, ease: "power2.out" }, 15.48);
+      });
+      tl.set("#final-sub-in", { opacity: 1 }, 15.85);
+      tl.fromTo("#final-sub-in", { y: 14, immediateRender: false }, { y: 0, duration: 0.3, ease: "power2.out" }, 15.85);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

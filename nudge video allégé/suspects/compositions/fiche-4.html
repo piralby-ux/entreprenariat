@@ -1,0 +1,93 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #root { position: absolute; inset: 0; perspective: 1800px; --c: #ff8c42; --cl: #ffba8e; --cd: #a65b2b; }
+    #f4-slot { position: absolute; left: 20px; top: 10px; width: 612px; height: 16px; background: #0a0b0d; }
+    #f4-roll { position: absolute; left: 36px; top: 24px; width: 580px; height: 300px; overflow: hidden; }
+    #f4-paper {
+      position: absolute; left: 0; top: 0; width: 580px; height: 296px; background: #fff8ec;
+      clip-path: polygon(0 0, 100% 0, 100% 94%, 95% 100%, 90% 94%, 85% 100%, 80% 94%, 75% 100%, 70% 94%, 65% 100%, 60% 94%, 55% 100%, 50% 94%, 45% 100%, 40% 94%, 35% 100%, 30% 94%, 25% 100%, 20% 94%, 15% 100%, 10% 94%, 5% 100%, 0 94%);
+    }
+    #f4-paper .cap { left: 20px; letter-spacing: -0.02em; }
+    #f4-head { top: 14px; font-family: "Bungee", sans-serif; font-weight: 400; }
+    #f4-l1 { top: 66px; }
+    #f4-l2 { top: 172px; }
+    #f4-dash1, #f4-dash2 { position: absolute; left: 20px; width: 540px; border-top: 3px dashed #0a0b0d; }
+    #f4-paid {
+      position: absolute; left: 330px; top: 106px; padding: 0 12px; border: 5px solid #1e7f76; color: #1e7f76;
+      font: 34px/50px "Bungee", sans-serif; transform-origin: 50% 50%;
+    }
+    #f4-cover { position: absolute; left: 0; top: 0; width: 580px; height: 300px; background: #e3d6c0; }
+    #f4-agent { position: absolute; left: 600px; top: 268px; width: 36px; height: 50px; }
+  </style>
+  <div id="root" data-composition-id="fiche-4" data-width="1920" data-height="1080" data-composition-variables='[
+    {"id":"mauvaise_foi_4","type":"number","label":"Contribuable — mauvaise foi","min":0,"max":10,"step":1,"default":5},
+    {"id":"frequence_4","type":"number","label":"Contribuable — fréquence","min":0,"max":10,"step":1,"default":5},
+    {"id":"discretion_4","type":"number","label":"Contribuable — discrétion","min":0,"max":10,"step":1,"default":5},
+    {"id":"citation_4","type":"string","label":"Contribuable — citation","default":"« Je paye déjà mes impôts locaux. »"},
+    {"id":"provisoire_4","type":"boolean","label":"Contribuable — provisoire","default":true},
+    {"id":"interview_src_4","type":"string","label":"Contribuable — interview (vidéo)","default":"assets/chroma-vert.mp4"},
+    {"id":"impots_montant","type":"string","label":"Contribuable — montant des impôts locaux","default":"[X]"}
+  ]'>
+    <div id="f4-stage" class="stage">
+      <div id="f4-fiche" class="fiche">
+        <div id="f4-slab" class="slab"></div>
+        <div class="face">
+          <div class="band"><div id="f4-badge" class="badge">PROVISOIRE</div></div>
+          <div class="reel-win"><div id="f4-reel" class="reel"></div></div>
+          <div class="portrait">
+            <div id="f4-roll">
+              <div id="f4-paper">
+                <div id="f4-head" class="cap">REÇU — MAIRIE</div>
+                <div id="f4-l1" class="cap">Impôts locaux ... <span data-var-text="impots_montant">[X]</span> €</div>
+                <div id="f4-paid">PAYÉ</div>
+                <div id="f4-dash1" style="top:160px"></div>
+                <div id="f4-l2" class="cap">Ramasser ce truc ... non inclus</div>
+                <div id="f4-dash2" style="top:220px"></div>
+              </div>
+              <div id="f4-cover"></div>
+            </div>
+            <div id="f4-slot"></div>
+            <!-- a tiny municipal agent sweeping at the foot of the receipt -->
+            <svg id="f4-agent" viewBox="0 0 36 50">
+              <circle cx="14" cy="6" r="5" fill="#0a0b0d" />
+              <rect x="9" y="12" width="11" height="20" fill="#ff8c42" stroke="#0a0b0d" stroke-width="2" />
+              <rect x="10" y="32" width="4" height="16" fill="#0a0b0d" /><rect x="16" y="32" width="4" height="16" fill="#0a0b0d" />
+              <g id="f4-broom"><rect x="23" y="10" width="3" height="32" fill="#a65b2b" /><rect x="19" y="40" width="12" height="8" fill="#ffd23f" stroke="#0a0b0d" stroke-width="1.5" /></g>
+            </svg>
+          </div>
+          <div class="gauge" style="top:744px"><b>MAUVAISE FOI</b><div class="bar"><div id="f4-g0" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:802px"><b>FRÉQUENCE</b><div class="bar"><div id="f4-g1" class="fill"></div><div class="ticks"></div></div></div>
+          <div class="gauge" style="top:860px"><b>DISCRÉTION</b><div class="bar"><div id="f4-g2" class="fill"></div><div class="ticks"></div></div></div>
+        </div>
+        <div id="f4-glint" class="glint"></div>
+      </div>
+      <div id="f4-win" class="win">
+        <div class="win-bar">LE CONTRIBUABLE</div>
+        <div class="win-screen">
+          <video id="f4-video" class="clip" data-start="1.2" data-duration="3.6" data-var-src="interview_src_4" src="assets/chroma-vert.mp4" muted playsinline></video>
+        </div>
+        <div id="f4-bulbs" class="bulbs"></div>
+      </div>
+      <div id="f4-quote" class="quote" data-var-text="citation_4">« Je paye déjà mes impôts locaux. »</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const vars = window.__hyperframes && window.__hyperframes.getVariables ? window.__hyperframes.getVariables() : {};
+      Fiche("f4", 16.0, 3, tl, vars);
+      // gag: the receipt unrolls below its slot; taxes PAID; picking it up: not included
+      tl.fromTo("#f4-cover", { y: 0 }, { y: 168, duration: 0.5, ease: "power2.out" }, 1.3);
+      tl.fromTo("#f4-paid", { scale: 2.2, rotation: -20, opacity: 0 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.14, ease: "power3.in" }, 1.9);
+      tl.to("#f4-cover", { y: 300, duration: 0.6, ease: "power2.out" }, 2.1);
+      tl.fromTo("#f4-l2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 2.4);
+      const clock = { t: 0 };
+      tl.fromTo(clock, { t: 0 }, {
+        t: 4.8, duration: 4.8, ease: "none",
+        onUpdate: () => gsap.set("#f4-broom", { rotation: 14 * Math.sin(2 * Math.PI * 2 * clock.t), svgOrigin: "24 12" }),
+      }, 0);
+      window.__timelines["fiche-4"] = tl;
+    })();
+  </script>
+</template>

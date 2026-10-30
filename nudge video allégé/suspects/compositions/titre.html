@@ -1,0 +1,50 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #root { position: absolute; inset: 0; perspective: 1800px; }
+    #ti-stage { position: absolute; inset: 0; transform-style: preserve-3d; }
+    #ti-group { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+    #ti-title { position: absolute; left: 0; top: 352px; width: 1920px; text-align: center; font: 96px/120px "Bungee", sans-serif; color: #f1e7d6; }
+    #ti-sub { position: absolute; left: 0; top: 500px; width: 1920px; text-align: center; font: italic 56px/72px "EB Garamond", serif; color: #f1e7d6; }
+    #ti-cells { position: absolute; left: 765px; top: 636px; width: 390px; height: 70px; }
+    #ti-cells i { position: absolute; top: 0; width: 70px; height: 70px; border: 8px solid; }
+    #ti-scan { position: absolute; left: 0; top: 320px; width: 140px; height: 420px; }
+    #ti-scan b { position: absolute; left: 0; top: 0; width: 134px; height: 420px; background: #2ec4b6; opacity: 0.16; }
+    #ti-scan i { position: absolute; right: 0; top: 0; width: 6px; height: 420px; background: #fff3e6; }
+  </style>
+  <div id="root" data-composition-id="titre" data-width="1920" data-height="1080">
+    <div id="ti-stage">
+      <div id="ti-group">
+        <div id="ti-title">GUIDE D’IDENTIFICATION</div>
+        <div id="ti-sub">Les propriétaires qui ne ramassent pas</div>
+        <!-- the five profiles as five cells of the block 1 grid (bevel lit top-left by the rim) -->
+        <div id="ti-cells">
+          <i id="ti-c0" style="left:0;background:#2ec4b6;border-color:#82dcd3 #1e7f76 #1e7f76 #82dcd3"></i>
+          <i id="ti-c1" style="left:80px;background:#ffd23f;border-color:#ffe48c #a68929 #a68929 #ffe48c"></i>
+          <i id="ti-c2" style="left:160px;background:#8a5cf6;border-color:#b99dfa #5a3ca0 #5a3ca0 #b99dfa"></i>
+          <i id="ti-c3" style="left:240px;background:#ff8c42;border-color:#ffba8e #a65b2b #a65b2b #ffba8e"></i>
+          <i id="ti-c4" style="left:320px;background:#ff3c38;border-color:#ff8a88 #a62724 #a62724 #ff8a88"></i>
+        </div>
+        <div id="ti-scan"><b></b><i></i></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.fromTo(clock, { t: 0 }, { t: 2.8, duration: 2.8, ease: "none", onUpdate: () => gsap.set("#ti-stage", { rotationY: FicheDrift(clock.t) }) }, 0);
+      // the title is there on frame 0 and settles; the subtitle follows
+      tl.fromTo("#ti-title", { scale: 1.06, opacity: 1 }, { scale: 1, duration: 0.7, ease: "power3.out" }, 0);
+      tl.fromTo("#ti-sub", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0.15);
+      // one vertical scan across the title
+      tl.fromTo("#ti-scan", { x: 180, opacity: 1 }, { x: 1640, duration: 1.1, ease: "power2.inOut" }, 0.25);
+      tl.to("#ti-scan", { opacity: 0, duration: 0.12, ease: "power2.in" }, 1.25);
+      // five cells pop in (pops may overshoot)
+      [0, 1, 2, 3, 4].forEach((i) => tl.fromTo(`#ti-c${i}`, { scale: 0 }, { scale: 1, duration: 0.3, ease: "back.out(2.2)" }, 0.55 + 0.08 * i));
+      // leave into depth while fiche 1 arrives
+      tl.to("#ti-group", { z: -700, opacity: 0, duration: 0.3, ease: "power3.in" }, 2.5);
+      window.__timelines["titre"] = tl;
+    })();
+  </script>
+</template>
