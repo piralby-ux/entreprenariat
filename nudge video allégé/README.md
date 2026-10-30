@@ -17,6 +17,14 @@ brouillons, captures ni caches. Tout ce qui manque se régénère avec les comma
 - `cues.mjs` → son + `SFX.md` ; `finish.mjs` → flou de mouvement, mastering, WAV.
 - Rendu et fiches seules : voir `REVIEW.md`, section « Refaire ».
 
+## transition-caca (transition de 2 s)
+- `index.html` (vague marron, ouverture, gouttes, son) + `compositions/plan-a.html`, `plan-b.html`.
+- 1920×1080, 60 i/s : la crotte de `suspects/compositions/fiche-2.html` tombe et s'écrase à 0,5 s, la vague
+  #8a5326 couvre tout l'écran au plus tard à 1,0 s, puis s'ouvre sur le plan B (#0d1230 → #2ec4b6).
+- `assets/` : Bungee, 3 sons copiés de `suspects/assets/sfx` (+ `CREDITS.md`), GSAP 3.14.2 en local.
+- `renders/` : le MP4 et `apercu.jpg` (planche de contrôle).
+- Rendu : `npx hyperframes render --quality delivery --fps 60 --workers 2 -o renders/transition-caca_1080p60.mp4`.
+
 ## outils/
 Scripts d'appoint : `peaks.mjs` (crête et attaque d'un son), `measure.mjs` (largeur d'un texte dans une
 police TTF), `freesound.mjs` / `commons.mjs` (recherche de sons libres), `lights.mjs` (lumières de ville).
