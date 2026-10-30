@@ -1,0 +1,18 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #pb-root { position: absolute; inset: 0; background: #2ec4b6; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #pb-label { font-family: "Bungee", sans-serif; font-size: 168px; line-height: 1; letter-spacing: 0.02em; color: #0d1230; }
+  </style>
+  <div id="pb-root" data-composition-id="plan-b" data-width="1920" data-height="1080">
+    <div id="pb-label">PLAN B</div>
+  </div>
+  <script>
+    (function () {
+      const tl = gsap.timeline({ paused: true });
+      // lands as the hole in the brown passes over it (film time 1.22 s)
+      tl.fromTo("#pb-label", { scale: 0.55, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2.4)" }, 0.22);
+      window.__timelines["plan-b"] = tl;
+    })();
+  </script>
+</template>

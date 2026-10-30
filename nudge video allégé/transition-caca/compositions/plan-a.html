@@ -1,0 +1,42 @@
+<template>
+  <style>
+    @font-face { font-family: "Bungee"; src: url("assets/fonts/Bungee-Regular.ttf"); }
+    #pa-root { position: absolute; inset: 0; background: #0d1230; overflow: hidden; }
+    #pa-shake { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+    #pa-label { font-family: "Bungee", sans-serif; font-size: 168px; line-height: 1; letter-spacing: 0.02em; color: #fff3e6; transform-origin: 50% 100%; }
+    /* same poop as suspects/compositions/fiche-2.html, ×4.2; its base lands 112 px under the centre */
+    #pa-poop { position: absolute; left: 809px; top: 425px; width: 302px; height: 227px; transform-origin: 50% 100%; }
+  </style>
+  <div id="pa-root" data-composition-id="plan-a" data-width="1920" data-height="1080">
+    <div id="pa-shake">
+      <div id="pa-label">PLAN A</div>
+      <svg id="pa-poop" viewBox="4 0 72 54">
+        <path d="M40.0 52.0 L70.7 52.0 L74.9 47.3 L74.5 41.6 L69.6 36.9 L63.5 35.4 L66.9 31.7 L66.9 26.5 L61.6 22.9 L57.6 21.3 L60.1 18.2 L59.3 13.5 L54.6 10.4 L50.5 7.3 L47.4 3.1 L45.4 1.6 L42.7 3.1 L38.0 7.3 L32.7 10.4 L27.0 13.5 L24.7 18.2 L26.4 21.3 L22.0 22.9 L15.9 26.5 L14.9 31.7 L17.7 35.4 L11.4 36.9 L5.9 41.6 L5.2 47.3 L9.3 52.0 Z" fill="#8a5326" stroke="#0a0b0d" stroke-width="1.5" />
+        <path d="M17.7 35.4 L63.5 35.4 M26.4 21.3 L57.6 21.3" stroke="#6b3f1d" stroke-width="1.6" />
+        <ellipse cx="28" cy="44" rx="8" ry="2.6" fill="#fff3e6" opacity="0.5" />
+        <ellipse cx="33" cy="29" rx="6" ry="2.2" fill="#fff3e6" opacity="0.45" />
+        <ellipse cx="40" cy="15" rx="4" ry="1.8" fill="#fff3e6" opacity="0.4" />
+      </svg>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const HIT = 0.5;
+      const tl = gsap.timeline({ paused: true });
+      // 0–0.5 s: the fall, stretched by speed
+      tl.fromTo("#pa-poop", { y: -1000, rotation: -14, scaleX: 0.86, scaleY: 1.18 }, { y: 0, rotation: 0, duration: HIT, ease: "power2.in" }, 0);
+      // 0.5 s: cartoon squash, then it sags into a flat puddle
+      tl.fromTo("#pa-poop", { scaleX: 0.86, scaleY: 1.18 }, { scaleX: 1.75, scaleY: 0.36, duration: 0.07, ease: "power3.out", immediateRender: false }, HIT);
+      tl.fromTo("#pa-poop", { scaleX: 1.75, scaleY: 0.36 }, { scaleX: 1.45, scaleY: 0.5, duration: 0.18, ease: "elastic.out(1, 0.45)", immediateRender: false }, HIT + 0.07);
+      // the title takes the hit too
+      tl.fromTo("#pa-label", { scaleX: 1, scaleY: 1 }, { scaleX: 1.08, scaleY: 0.8, duration: 0.06, ease: "power3.out" }, HIT);
+      tl.fromTo("#pa-label", { scaleX: 1.08, scaleY: 0.8 }, { scaleX: 1, scaleY: 1, duration: 0.3, ease: "elastic.out(1, 0.35)", immediateRender: false }, HIT + 0.06);
+      // impact shake, damped
+      const S = [[0, 0], [-22, 14], [18, -10], [-12, 8], [8, -4], [-3, 2], [0, 0]];
+      for (let i = 1; i < S.length; i++) {
+        tl.fromTo("#pa-shake", { x: S[i - 1][0], y: S[i - 1][1] }, { x: S[i][0], y: S[i][1], duration: 0.033, ease: "none", immediateRender: i === 1 }, HIT + (i - 1) * 0.033);
+      }
+      window.__timelines["plan-a"] = tl;
+    })();
+  </script>
+</template>
