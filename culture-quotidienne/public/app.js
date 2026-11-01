@@ -3,13 +3,20 @@ const app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 async function api(path, opts = {}) {
-  const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
+  let res;
+  try {
+    res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  } catch {
+    throw new Error('Hors connexion : impossible de joindre l’app. Les articles déjà ouverts restent lisibles.');
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
   return data;
 }
 
 function toast(msg) {
+  document.querySelectorAll('.toast').forEach((t) => t.remove());
   const el = document.createElement('div');
   el.className = 'toast';
   el.textContent = msg;
@@ -39,6 +46,36 @@ function metaChips(t, { withStatus = true } = {}) {
   return `<div class="meta">${chips.join('')}</div>`;
 }
 
+function feedbackButtons(t) {
+  return `<span class="feedback" data-id="${t.id}">
+    <button class="thumb${t.feedback === 1 ? ' on' : ''}" data-fb="1" title="J’ai aimé : plus de sujets comme ça" aria-pressed="${t.feedback === 1}">👍</button>
+    <button class="thumb${t.feedback === -1 ? ' on' : ''}" data-fb="-1" title="Pas pour moi : moins de sujets comme ça" aria-pressed="${t.feedback === -1}">👎</button>
+  </span>`;
+}
+
+function bindFeedback(root) {
+  root.querySelectorAll('.feedback').forEach((box) =>
+    box.querySelectorAll('[data-fb]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const value = btn.classList.contains('on') ? 0 : Number(btn.dataset.fb);
+        try {
+          await api(`/api/topics/${box.dataset.id}/feedback`, { method: 'POST', body: { value } });
+          box.querySelectorAll('[data-fb]').forEach((b) => {
+            const on = Number(b.dataset.fb) === value;
+            b.classList.toggle('on', on);
+            b.setAttribute('aria-pressed', on);
+          });
+          toast(value === 1 ? 'Noté : plus de sujets comme ça' : value === -1 ? 'Noté : moins de sujets comme ça' : 'Avis retiré');
+        } catch (e) {
+          toast(e.message);
+        }
+      })
+    )
+  );
+}
+
+const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
+
 /* ---------------- Aujourd'hui ---------------- */
 
 async function renderToday() {
@@ -49,7 +86,11 @@ async function renderToday() {
   } catch (e) {
     return showError(e);
   }
-  const { topics, date, queued, readToday } = data;
+  const { topics, date, queued, readToday, streak } = data;
+  // Met en cache (hors connexion) les articles déjà rédigés du jour.
+  if ('serviceWorker' in navigator && navigator.onLine) {
+    topics.filter((t) => t.hasArticle).forEach((t) => fetch(`/api/topics/${t.id}/article`).catch(() => {}));
+  }
   const cards = topics
     .map(
       (t) => `
@@ -70,6 +111,7 @@ async function renderToday() {
   app.innerHTML = `
     <div class="page-head">
       <h1>${esc(formatDate(date))}</h1>
+      ${streak ? `<p class="streak">🔥 ${plural(streak, 'jour')} d’affilée${readToday ? '' : ' · lis un sujet aujourd’hui pour continuer la série'}</p>` : ''}
       <p>${topics.length} sujet${topics.length > 1 ? 's' : ''} aujourd’hui · ${readToday} lu${readToday > 1 ? 's' : ''}${queued ? ` · ${queued} en file d’attente` : ''}</p>
     </div>
     ${topics.length ? `<div class="grid">${cards}</div>` : '<div class="empty">Tout est traité pour aujourd’hui. À demain !</div>'}`;
@@ -109,7 +151,7 @@ async function renderArticle(id) {
       <div class="choices">
         ${q.choices.map((c, ci) => `<button data-choice="${ci}">${esc(c)}</button>`).join('')}
       </div>
-      <button class="reveal" data-reveal>Voir la correction</button>
+      <button class="reveal" data-reveal>Voir la correction sans répondre</button>
       <div class="explanation" hidden></div>
     </div>`
     )
@@ -135,7 +177,7 @@ async function renderArticle(id) {
       <h2 class="section-title">Mini-quiz</h2>
       ${quiz}
       ${sources}
-      <div class="article-footer">${footer}</div>
+      <div class="article-footer">${footer}<span class="fb-label">Ce sujet ?</span>${feedbackButtons(a)}</div>
     </div>`;
 
   // Mise en valeur de la section "À retenir"
@@ -160,12 +202,21 @@ async function renderArticle(id) {
       const ex = box.querySelector('.explanation');
       ex.innerHTML = `${picked === undefined ? '' : picked === q.answer ? '<strong>Bonne réponse !</strong> ' : '<strong>Raté.</strong> '}${esc(q.explanation || '')}`;
       ex.hidden = false;
-      box.querySelector('[data-reveal]').remove();
+      box.querySelector('[data-reveal]')?.remove();
     };
-    box.querySelectorAll('[data-choice]').forEach((b) => b.addEventListener('click', () => reveal(Number(b.dataset.choice))));
+    const qi = Number(box.dataset.q);
+    if (a.answers[qi] !== undefined) return reveal(a.answers[qi]);
+    box.querySelectorAll('[data-choice]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const choice = Number(b.dataset.choice);
+        reveal(choice);
+        api(`/api/topics/${id}/quiz`, { method: 'POST', body: { question: qi, choice } }).catch(() => {});
+      })
+    );
     box.querySelector('[data-reveal]').addEventListener('click', () => reveal(undefined));
   });
 
+  bindFeedback(app);
   app.querySelectorAll('.article-footer button[data-action]').forEach((btn) =>
     btn.addEventListener('click', async () => {
       btn.disabled = true;
@@ -214,12 +265,13 @@ async function renderHistory() {
             (t) => `
         <article class="card">
           <div class="meta"><span class="chip">${esc(t.theme)}</span><span class="chip muted">Lu le ${esc(new Date(t.readDate + 'T12:00:00').toLocaleDateString('fr-FR'))} · ${t.readMinutes} min</span></div>
-          <h2><a href="#/article/${t.id}">${esc(t.title)}</a></h2>
+          <div class="row"><h2><a href="#/article/${t.id}">${esc(t.title)}</a></h2>${feedbackButtons(t)}</div>
         </article>`
           )
           .join('')}</div>`
       : '<div class="empty">Rien pour l’instant.</div>'}`;
 
+  bindFeedback(app);
   const form = document.getElementById('filters');
   const apply = () => {
     const p = new URLSearchParams(new FormData(form));
@@ -238,18 +290,70 @@ async function renderHistory() {
   form.addEventListener('submit', (e) => { e.preventDefault(); apply(); });
 }
 
+/* ---------------- Progrès ---------------- */
+
+async function renderStats() {
+  loading('Chargement…');
+  let s;
+  try {
+    s = await api('/api/stats');
+  } catch (e) {
+    return showError(e);
+  }
+  const pct = (c, n) => (n ? Math.round((100 * c) / n) + ' %' : '—');
+  const hours = s.totalMinutes >= 60 ? `${Math.floor(s.totalMinutes / 60)} h ${String(s.totalMinutes % 60).padStart(2, '0')}` : `${s.totalMinutes} min`;
+  const maxRead = Math.max(1, ...s.byTheme.map((t) => t.read));
+  const pref = (w) => (w > 1.05 ? '<span class="pref up">plus souvent</span>' : w < 0.95 ? '<span class="pref down">moins souvent</span>' : '');
+
+  app.innerHTML = `
+    <div class="page-head"><h1>Progrès</h1><p>Ta régularité, tes thèmes et tes quiz.</p></div>
+    <div class="stats">
+      <div class="stat"><span class="big">🔥 ${s.current}</span><span>jour${s.current > 1 ? 's' : ''} d’affilée</span></div>
+      <div class="stat"><span class="big">${s.best}</span><span>meilleure série</span></div>
+      <div class="stat"><span class="big">${s.totalRead}</span><span>sujet${s.totalRead > 1 ? 's' : ''} lu${s.totalRead > 1 ? 's' : ''}</span></div>
+      <div class="stat"><span class="big">${hours}</span><span>de lecture</span></div>
+      <div class="stat"><span class="big">${pct(s.quiz.correct, s.quiz.answered)}</span><span>bonnes réponses (${s.quiz.correct}/${s.quiz.answered})</span></div>
+    </div>
+
+    <h2 class="section-title">Par thème</h2>
+    ${s.byTheme.length ? `<div class="themes">${s.byTheme.map((t) => `
+      <div class="theme-row">
+        <div class="theme-head"><strong>${esc(t.theme)}</strong> ${pref(t.weight)}
+          <span class="muted">${plural(t.read, 'lu')} · ${t.minutes} min · quiz ${pct(t.correct, t.answered)} · 👍 ${t.likes} · 👎 ${t.dislikes}</span></div>
+        <div class="bar"><span style="width:${(100 * t.read) / maxRead}%"></span></div>
+      </div>`).join('')}</div>` : '<div class="empty">Lis ton premier sujet pour voir tes statistiques.</div>'}
+    <p class="hint">Tes 👍 / 👎 changent la fréquence des thèmes et orientent le choix des sujets.</p>
+
+    <h2 class="section-title">Exporter en flashcards</h2>
+    <p class="hint">Pour chaque article lu : une carte « À retenir » et une carte par question du quiz.</p>
+    <div class="actions">
+      <a class="btn primary" href="/api/export/flashcards?format=anki" download>Anki (.txt)</a>
+      <a class="btn" href="/api/export/flashcards?format=csv" download>CSV (Excel, Quizlet…)</a>
+    </div>`;
+}
+
 /* ---------------- Routeur ---------------- */
 
 function route() {
   const hash = location.hash || '#/';
   const article = hash.match(/^#\/article\/(\d+)/);
   document.querySelectorAll('[data-nav]').forEach((a) =>
-    a.classList.toggle('active', (a.dataset.nav === 'history' && hash.startsWith('#/historique')) || (a.dataset.nav === 'today' && (hash === '#/' || hash === '#')))
+    a.classList.toggle('active', (a.dataset.nav === 'history' && hash.startsWith('#/historique')) || (a.dataset.nav === 'stats' && hash.startsWith('#/progres')) || (a.dataset.nav === 'today' && (hash === '#/' || hash === '#')))
   );
   if (article) return renderArticle(article[1]);
   if (hash.startsWith('#/historique')) return renderHistory();
+  if (hash.startsWith('#/progres')) return renderStats();
   return renderToday();
 }
 
 window.addEventListener('hashchange', route);
 route();
+
+const offlineBanner = () => document.body.classList.toggle('offline', !navigator.onLine);
+window.addEventListener('online', offlineBanner);
+window.addEventListener('offline', offlineBanner);
+offlineBanner();
+
+// Service worker : app installable + articles lisibles hors connexion
+// (fonctionne sur localhost ou en HTTPS, voir README).
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});

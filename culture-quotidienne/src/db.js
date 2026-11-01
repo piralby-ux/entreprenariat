@@ -1,6 +1,9 @@
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS topics (
@@ -37,18 +40,34 @@ CREATE TABLE IF NOT EXISTS daily_slots (
   PRIMARY KEY (date, topic_id)
 );
 
+CREATE TABLE IF NOT EXISTS quiz_answers (
+  topic_id       INTEGER NOT NULL REFERENCES topics(id),
+  question_index INTEGER NOT NULL,
+  choice         INTEGER NOT NULL,
+  correct        INTEGER NOT NULL,
+  answered_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (topic_id, question_index)   -- seule la 1re réponse compte
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
 `;
 
-export function openDb(file = process.env.DB_PATH || path.resolve('data/culture.db')) {
+export function openDb(file = (process.env.DB_PATH && path.resolve(ROOT, process.env.DB_PATH)) || path.join(ROOT, 'data/culture.db')) {
   if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   db.exec(SCHEMA);
+  migrate(db);
   return db;
+}
+
+// Ajout de colonnes sur une base existante (créée par une version précédente).
+function migrate(db) {
+  const cols = new Set(db.prepare('PRAGMA table_info(topics)').all().map((c) => c.name));
+  if (!cols.has('feedback')) db.exec('ALTER TABLE topics ADD COLUMN feedback INTEGER'); // 1 = 👍, -1 = 👎
 }
 
 export function getSetting(db, key, fallback = null) {

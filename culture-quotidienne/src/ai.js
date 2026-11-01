@@ -58,7 +58,7 @@ Règles pour chaque sujet :
 - N'invente aucun fait. Pour les thèmes d'actualité, choisis des enjeux de fond durables plutôt qu'un événement précis dont tu n'es pas certain : le rédacteur vérifiera l'actualité récente par recherche web.
 - Respecte strictement le thème et les consignes de chaque créneau.`;
 
-export async function generateTopics({ date, slots, pastTitles }) {
+export async function generateTopics({ date, slots, pastTitles, preferences = { liked: [], disliked: [] } }) {
   if (MOCK) return mockTopics({ slots, pastTitles });
 
   const slotLines = slots
@@ -78,6 +78,12 @@ export async function generateTopics({ date, slots, pastTitles }) {
     ? pastTitles.map((t) => `- [${t.theme}] ${t.title}`).join('\n')
     : '(aucun pour l’instant)';
 
+  const fmt = (list) => list.map((t) => `- [${t.theme}] ${t.title}`).join('\n');
+  const prefs = [
+    preferences.liked.length ? `Sujets que Pierre a aimés (inspire-toi du type d'angle et de sujet) :\n${fmt(preferences.liked)}` : '',
+    preferences.disliked.length ? `Sujets que Pierre n'a pas aimés (évite ce type d'angle ou de sujet) :\n${fmt(preferences.disliked)}` : '',
+  ].filter(Boolean).join('\n\n');
+
   const response = await getClient().messages.create({
     model: TOPICS_MODEL,
     max_tokens: 8000,
@@ -93,7 +99,7 @@ export async function generateTopics({ date, slots, pastTitles }) {
 
 Sujets déjà traités (à ne jamais reproposer) :
 ${past}
-
+${prefs ? `\n${prefs}\n` : ''}
 Propose exactement ${slots.length} sujets, un par créneau :
 ${slotLines}`,
       },

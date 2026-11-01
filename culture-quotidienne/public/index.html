@@ -5,17 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>Culture quotidienne</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+  <meta name="theme-color" content="#2f5d50">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Culture">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="topbar">
-    <a href="#/" class="brand">Culture quotidienne</a>
+    <a href="#/" class="brand">Culture<span class="brand-full"> quotidienne</span></a>
     <nav>
       <a href="#/" data-nav="today">Aujourd’hui</a>
       <a href="#/historique" data-nav="history">Historique</a>
+      <a href="#/progres" data-nav="stats">Progrès</a>
     </nav>
   </header>
+  <div class="offline-banner">Hors connexion · lecture des contenus déjà ouverts</div>
   <main id="app" aria-live="polite"></main>
   <script type="module" src="app.js"></script>
 </body>

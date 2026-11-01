@@ -179,3 +179,35 @@ button:disabled { opacity: .5; cursor: default; }
 .choices button:disabled:not(.correct):not(.wrong) { opacity: .55; }
 .brand { white-space: nowrap; }
 @media (max-width: 400px) { .brand { font-size: 1rem; } .topbar nav a { padding: 6px 9px; } }
+
+/* ---------- Série, avis, progrès, hors connexion ---------- */
+.page-head p.streak { color: var(--warn); font-weight: 600; margin-top: 2px; }
+
+.feedback { display: inline-flex; gap: 4px; flex-shrink: 0; }
+.thumb { padding: 4px 9px; font-size: 1rem; border-radius: 999px; filter: grayscale(1); opacity: .7; }
+.thumb.on { filter: none; opacity: 1; background: var(--accent-soft); border-color: var(--accent); }
+.fb-label { color: var(--muted); font-size: .9rem; align-self: center; margin-left: 8px; }
+.row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.stat {
+  display: flex; flex-direction: column; gap: 2px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--muted); font-size: .88rem;
+}
+.stat .big { font-size: 1.6rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.themes { display: grid; gap: 12px; }
+.theme-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; font-size: .95rem; }
+.theme-head .muted { color: var(--muted); font-size: .85rem; }
+.bar { height: 8px; margin-top: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.pref { font-size: .75rem; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+.pref.up { background: var(--ok-soft); color: var(--ok); }
+.pref.down { background: var(--bad-soft); color: var(--bad); }
+.hint { color: var(--muted); font-size: .9rem; }
+
+.offline-banner { display: none; padding: 8px 16px; text-align: center; font-size: .85rem; background: var(--warn-soft); color: var(--warn); }
+body.offline .offline-banner { display: block; }
+
+@media (max-width: 400px) { .topbar { padding: 10px 12px; } .topbar nav a { padding: 6px 7px; font-size: .85rem; } }
+@media (max-width: 480px) { .brand-full { display: none; } }

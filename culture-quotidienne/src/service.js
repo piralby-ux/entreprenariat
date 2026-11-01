@@ -27,12 +27,29 @@ export function createService(db) {
     return Object.fromEntries(rows.map((r) => [r.theme, r.last]));
   }
 
-  // Thèmes distincts, les moins récemment proposés en premier, + 1 joker par jour.
-  function chooseThemes(count, excluded) {
+  // Goûts de Pierre : somme des 👍 (+1) et 👎 (-1) par thème, bornée à [-4, 4].
+  // Multiplicateur de priorité : 👎👎👎👎 → ×0,2 ; neutre → ×1 ; 👍👍👍👍 → ×1,8.
+  function themeWeights() {
+    const rows = db.prepare('SELECT theme, SUM(feedback) AS score FROM topics WHERE feedback IS NOT NULL GROUP BY theme').all();
+    return Object.fromEntries(
+      rows.map((r) => {
+        const score = Math.max(-4, Math.min(4, r.score));
+        return [r.theme, { score: r.score, weight: 1 + 0.2 * score }];
+      })
+    );
+  }
+
+  // Thèmes distincts, priorité = ancienneté × goût, + 1 joker par jour.
+  function chooseThemes(count, excluded, date = today()) {
     if (count <= 0) return [];
     const seen = lastSeenByTheme();
+    const weights = themeWeights();
+    const priority = (name) => {
+      const days = seen[name] ? Math.max(1, daysBetween(seen[name], date)) : 30;
+      return days * (weights[name]?.weight ?? 1);
+    };
     const byOldest = (list) =>
-      shuffle(list.filter((t) => !excluded.has(t.name))).sort((a, b) => (seen[a.name] || '').localeCompare(seen[b.name] || ''));
+      shuffle(list.filter((t) => !excluded.has(t.name))).sort((a, b) => priority(b.name) - priority(a.name));
 
     const picks = [];
     if (count >= 2) {
@@ -83,7 +100,10 @@ export function createService(db) {
 
     // 2. Nouveaux thèmes, distincts de ceux des sujets reportés.
     const needed = TOPICS_PER_DAY - carried.length;
-    const themes = chooseThemes(needed, new Set(carried.map((t) => t.theme)));
+    const themes = chooseThemes(needed, new Set(carried.map((t) => t.theme)), date);
+    const prefRows = (v) =>
+      db.prepare('SELECT title, theme FROM topics WHERE feedback = ? ORDER BY id DESC LIMIT 20').all(v);
+    const preferences = { liked: prefRows(1), disliked: prefRows(-1) };
     const slots = themes.map((t) => ({
       theme: t.name, brief: t.brief, isJoker: t.isJoker,
       history: t.name === 'Histoire' ? nextHistoryStep() : null,
@@ -98,6 +118,7 @@ export function createService(db) {
       const missing = slots.map((s, i) => i).filter((i) => !accepted.has(i));
       const generated = await generateTopics({
         date,
+        preferences,
         slots: missing.map((i) => slots[i]),
         pastTitles: [...pastTitles, ...[...accepted.values()].map((t) => ({ title: t.title, theme: t.theme }))],
       });
@@ -167,6 +188,7 @@ export function createService(db) {
       carried: !!carried,
       waitingDays: carried && t.postponed_since ? daysBetween(t.postponed_since, date) : 0,
       hasArticle: !!t.article_md,
+      feedback: t.feedback ?? 0,
     };
   }
 
@@ -185,6 +207,7 @@ export function createService(db) {
       topics: visible.map((t) => cardOf(t, date, t.carried)),
       queued: queue,
       readToday: visible.filter((t) => t.status === 'read').length,
+      streak: streaks().current,
     };
   }
 
@@ -202,6 +225,9 @@ export function createService(db) {
       sources: JSON.parse(t.sources_json || '[]'),
       readDate: t.read_date,
       proposedDate: t.first_proposed_date,
+      answers: Object.fromEntries(
+        db.prepare('SELECT question_index, choice FROM quiz_answers WHERE topic_id = ?').all(t.id).map((r) => [r.question_index, r.choice])
+      ),
     };
   }
 
@@ -261,8 +287,142 @@ export function createService(db) {
       .map((t) => cardOf(t, date, true));
   }
 
-  return { getToday, getArticle, archive, markRead, history, queue, chooseThemes };
+  /* ---------------- 👍 / 👎 ---------------- */
+
+  function setFeedback(id, value) {
+    getTopicRow(id);
+    const v = Number(value);
+    if (![1, -1, 0].includes(v)) throw httpError(400, 'Valeur attendue : 1, -1 ou 0.');
+    db.prepare('UPDATE topics SET feedback = ? WHERE id = ?').run(v === 0 ? null : v, id);
+    return { ok: true, feedback: v };
+  }
+
+  /* ---------------- Quiz (seule la première réponse compte) ---------------- */
+
+  function answerQuiz(id, questionIndex, choice) {
+    const t = getTopicRow(id);
+    if (!t.quiz_json) throw httpError(409, 'Article pas encore généré.');
+    const q = JSON.parse(t.quiz_json)[questionIndex];
+    if (!q || !Number.isInteger(choice) || !q.choices[choice]) throw httpError(400, 'Réponse invalide.');
+    db.prepare(`INSERT OR IGNORE INTO quiz_answers(topic_id, question_index, choice, correct) VALUES (?, ?, ?, ?)`)
+      .run(id, questionIndex, choice, choice === q.answer ? 1 : 0);
+    return { ok: true, correct: choice === q.answer };
+  }
+
+  /* ---------------- Séries et statistiques ---------------- */
+
+  function streaks() {
+    const days = db.prepare(`SELECT DISTINCT read_date AS d FROM topics WHERE status = 'read' ORDER BY d`).all().map((r) => r.d);
+    let best = 0;
+    let run = 0;
+    for (let i = 0; i < days.length; i++) {
+      run = i > 0 && daysBetween(days[i - 1], days[i]) === 1 ? run + 1 : 1;
+      best = Math.max(best, run);
+    }
+    // Série en cours : se termine aujourd'hui, ou hier si rien n'est encore lu aujourd'hui.
+    const date = today();
+    const last = days[days.length - 1];
+    const current = last && daysBetween(last, date) <= 1 ? run : 0;
+    return { current, best, readToday: last === date };
+  }
+
+  function stats() {
+    const totals = db.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(read_minutes), 0) AS minutes FROM topics WHERE status = 'read'`).get();
+    const quiz = db.prepare('SELECT COUNT(*) AS answered, COALESCE(SUM(correct), 0) AS correct FROM quiz_answers').get();
+    const weights = themeWeights();
+    const byTheme = db.prepare(`
+      SELECT t.theme,
+             SUM(t.status = 'read') AS read,
+             COALESCE(SUM(CASE WHEN t.status = 'read' THEN t.read_minutes END), 0) AS minutes,
+             SUM(t.feedback = 1) AS likes,
+             SUM(t.feedback = -1) AS dislikes,
+             (SELECT COUNT(*) FROM quiz_answers q JOIN topics t2 ON t2.id = q.topic_id WHERE t2.theme = t.theme) AS answered,
+             (SELECT COALESCE(SUM(q.correct), 0) FROM quiz_answers q JOIN topics t2 ON t2.id = q.topic_id WHERE t2.theme = t.theme) AS correct
+      FROM topics t GROUP BY t.theme
+      HAVING read > 0 OR likes > 0 OR dislikes > 0
+      ORDER BY read DESC, t.theme`).all();
+    return {
+      ...streaks(),
+      totalRead: totals.n,
+      totalMinutes: totals.minutes,
+      quiz,
+      byTheme: byTheme.map((r) => ({ ...r, weight: weights[r.theme]?.weight ?? 1 })),
+    };
+  }
+
+  /* ---------------- Export flashcards ---------------- */
+
+  function takeaways(markdown) {
+    const m = markdown.match(/^##\s*À retenir\s*$([\s\S]*?)(?=^#{1,2}\s|(?![\s\S]))/im);
+    if (!m) return [];
+    return m[1].split('\n').map((l) => l.match(/^\s*[-*]\s+(.*)$/)?.[1]).filter(Boolean)
+      .map((l) => l.replace(/\*\*(.*?)\*\*/g, '$1').trim());
+  }
+
+  // Cartes : 1 carte « À retenir » par article + 1 carte par question de quiz.
+  function flashcards() {
+    const rows = db.prepare(`SELECT * FROM topics WHERE status = 'read' AND article_md IS NOT NULL ORDER BY read_date, id`).all();
+    const cards = [];
+    for (const t of rows) {
+      const points = takeaways(t.article_md);
+      if (points.length) {
+        cards.push({ theme: t.theme, front: `${t.title}\nQue faut-il retenir ?`, back: points.map((p) => `• ${p}`).join('\n') });
+      }
+      for (const q of JSON.parse(t.quiz_json || '[]')) {
+        const letters = 'ABCD';
+        cards.push({
+          theme: t.theme,
+          front: `${q.question}\n${q.choices.map((c, i) => `${letters[i]}. ${c}`).join('\n')}`,
+          back: `${letters[q.answer]}. ${q.choices[q.answer]}${q.explanation ? `\n${q.explanation}` : ''}`,
+        });
+      }
+    }
+    return cards;
+  }
+
+  function exportFlashcards(format) {
+    const cards = flashcards();
+    const tag = (theme) => normalize(theme).replace(/ /g, '_');
+    if (format === 'anki') {
+      // Format texte importable dans Anki (Fichier > Importer) : recto, verso, étiquette.
+      const cell = (s) => esc(s).replace(/\n/g, '<br>').replace(/\t/g, ' ');
+      const lines = ['#separator:tab', '#html:true', '#tags column:3', ...cards.map((c) => [cell(c.front), cell(c.back), `culture_quotidienne ${tag(c.theme)}`].join('\t'))];
+      return { filename: 'culture-quotidienne-anki.txt', type: 'text/plain; charset=utf-8', body: lines.join('\n') + '\n', count: cards.length };
+    }
+    // CSV (Excel, Quizlet, Google Sheets…) avec BOM pour les accents sous Excel.
+    const cell = (s) => `"${String(s).replace(/"/g, '""')}"`;
+    const lines = ['Thème;Recto;Verso', ...cards.map((c) => [c.theme, c.front, c.back].map(cell).join(';'))];
+    return { filename: 'culture-quotidienne-flashcards.csv', type: 'text/csv; charset=utf-8', body: '﻿' + lines.join('\r\n') + '\r\n', count: cards.length };
+  }
+
+  /* ---------------- Préparation automatique (nuit / démarrage) ---------------- */
+
+  async function prepareDay({ articles = false, log = () => {} } = {}) {
+    const date = today();
+    await ensureDay(date);
+    if (!articles) return { date, generated: 0 };
+    const pending = db.prepare(`SELECT t.id, t.title FROM daily_slots s JOIN topics t ON t.id = s.topic_id
+                                WHERE s.date = ? AND t.article_md IS NULL AND t.status = 'proposed' ORDER BY s.position`).all(date);
+    let generated = 0;
+    for (const t of pending) {
+      try {
+        await getArticle(t.id);
+        generated++;
+        log(`Article prêt : ${t.title}`);
+      } catch (e) {
+        log(`Échec de l'article « ${t.title} » : ${e.message}`);
+      }
+    }
+    return { date, generated };
+  }
+
+  return {
+    getToday, getArticle, archive, markRead, history, queue, chooseThemes, themeWeights,
+    setFeedback, answerQuiz, stats, exportFlashcards, flashcards, prepareDay,
+  };
 }
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 export function httpError(status, message) {
   const e = new Error(message);

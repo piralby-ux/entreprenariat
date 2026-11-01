@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning server.js",
     "demo": "MOCK_AI=1 DB_PATH=data/demo.db node --no-warnings=ExperimentalWarning server.js",
-    "test": "node --no-warnings=ExperimentalWarning --test test/*.test.js"
+    "test": "node --no-warnings=ExperimentalWarning --test test/*.test.js",
+    "autostart:install": "node scripts/autostart.js install",
+    "autostart:remove": "node scripts/autostart.js remove"
   },
   "license": "ISC",
   "dependencies": {
