@@ -1,0 +1,207 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #ede6da; }
+    #k-cam { position: absolute; inset: 0; transform-origin: 540px 960px; }
+    #k-book { position: absolute; inset: 0; perspective: 2300px; perspective-origin: 540px 960px; }
+    .k-page { position: absolute; inset: 0; background: #ede6da; overflow: hidden; }
+    .k-push { position: absolute; inset: 0; background: #ede6da; transform-origin: 540px 900px; }
+    .k-abs { position: absolute; display: block; }
+    #k-p1 { transform-origin: 0 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .k-gutter { position: absolute; left: 0; top: 0; width: 78px; height: 100%; background: linear-gradient(90deg, rgba(18,17,16,0.16), rgba(18,17,16,0)); }
+    #k-p1-turnshade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(18,17,16,0.05), rgba(18,17,16,0.45)); opacity: 0; }
+    #k-p2-shadow { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: linear-gradient(90deg, rgba(18,17,16,0.5), rgba(18,17,16,0.12) 75%, rgba(18,17,16,0)); opacity: 0; }
+    #k-spiral { position: absolute; left: -57.4px; top: 15px; width: 118.1px; height: 1890px; overflow: visible; }
+    .k-label { position: absolute; left: 92px; top: 286px; font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 28px;
+      letter-spacing: 0.15em; color: #6e6a64; white-space: pre; }
+    #k-blot { position: absolute; left: 868px; top: 318px; width: 60px; height: 52px; }
+    #k-eraser { position: absolute; left: 96px; top: 1560px; width: 190px; height: 90px; }
+    /* éventail du croquis : s'ouvre par un masque radial depuis le rivet */
+    #k-bfan { -webkit-mask-image: conic-gradient(from 343deg at 616px 662px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg));
+      mask-image: conic-gradient(from 343deg at 616px 662px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg)); }
+    #k-fb { position: absolute; left: 0; top: 0; width: 692px; height: 785px; transform-origin: 0 0; }
+    #k-fb-ink { position: absolute; left: 0; top: 0; width: 692px; height: 785px;
+      -webkit-mask-image: conic-gradient(from 348deg at 231px 452px, #000 0deg, #000 calc(var(--fa, 0) * 1deg), transparent calc(var(--fa, 0) * 1deg + 0.8deg)),
+        radial-gradient(circle at 231px 452px, #000 calc(var(--fr, 0) * 1px), transparent calc(var(--fr, 0) * 1px + 60px));
+      mask-image: conic-gradient(from 348deg at 231px 452px, #000 0deg, #000 calc(var(--fa, 0) * 1deg), transparent calc(var(--fa, 0) * 1deg + 0.8deg)),
+        radial-gradient(circle at 231px 452px, #000 calc(var(--fr, 0) * 1px), transparent calc(var(--fr, 0) * 1px + 60px)); }
+    .k-tassel { position: absolute; transform-origin: 50% 3%; }
+  </style>
+  <div id="root" data-composition-id="croquis" data-width="1080" data-height="1920">
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <filter id="k-bleedA" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="21" result="n" />
+          <feDisplacementMap id="k-bleedA-d" in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+        <filter id="k-bleedB" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="5" result="n" />
+          <feDisplacementMap id="k-bleedB-d" in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+        <filter id="k-breeze" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence id="k-breeze-t" type="fractalNoise" baseFrequency="0.006 0.01" numOctaves="1" seed="2" result="n" />
+          <feDisplacementMap id="k-breeze-d" in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="B" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="k-cam">
+      <div id="k-book">
+        <!-- PAGE 2 : croquis B (éventail + mèches, crayon) -> flash B -->
+        <div id="k-p2" class="k-page">
+          <div id="k-p2-push" class="k-push">
+            <img class="k-abs" src="assets/img/croquisB_page.jpg" style="left:-140px; top:250px; width:1078px; height:1533px; mix-blend-mode:multiply" />
+            <img id="k-bfan" class="k-abs" src="assets/img/croquisB_fan.png" style="left:-140px; top:250px; width:1078px; height:1533px" />
+            <div id="k-fb">
+              <div id="k-fb-bleed" style="position:absolute; inset:0; filter:url(#k-bleedB)">
+                <img id="k-fb-ink" src="assets/img/flashB_ink.png" />
+              </div>
+              <img id="k-tasL" class="k-tassel" src="assets/img/flashB_tasselL.png" style="left:19px; top:389px; width:68px; height:160px" />
+              <img id="k-tasR" class="k-tassel" src="assets/img/flashB_tasselR.png" style="left:87px; top:389px; width:42px; height:160px" />
+            </div>
+          </div>
+          <div class="k-gutter"></div>
+          <div id="k-p2-shadow"></div>
+          <div id="k-lab3" class="k-label">CROQUIS — 30.09</div>
+          <div id="k-lab4" class="k-label">FLASH — 17.10</div>
+        </div>
+        <!-- PAGE 1 : croquis A (stylo bille bleu) -> flash A -->
+        <div id="k-p1" class="k-page">
+          <div id="k-p1-push" class="k-push">
+            <img id="k-apage" class="k-abs" src="assets/img/croquisA_page.jpg" style="left:170px; top:190px; width:1080px; height:1663px; mix-blend-mode:multiply" />
+            <img id="k-aink" class="k-abs" src="assets/img/croquisA_ink.png" style="left:170px; top:190px; width:1080px; height:1663px" />
+            <svg id="k-asvg" class="k-abs" width="1080" height="1920" viewBox="0 0 1080 1920" style="left:0; top:0; overflow:visible">
+              <defs>
+                <mask id="k-amask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1200" height="1500">
+                  <g id="k-amask-g"></g>
+                  <rect id="k-amask-full" x="-200" y="-200" width="1200" height="1500" fill="#fff" opacity="0" />
+                </mask>
+              </defs>
+              <g transform="translate(170 190) scale(1.35)">
+                <g id="k-abreeze">
+                  <g id="k-amatrix">
+                    <g id="k-ableed" filter="url(#k-bleedA)">
+                      <image href="assets/img/flashA_ink.png" width="702" height="1065" mask="url(#k-amask)" />
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </svg>
+            <!-- tache d'encre et traces de gomme dans les coins -->
+            <svg id="k-blot" viewBox="0 0 60 52"><path d="M22 10 c10 -8 28 -4 30 10 c2 12 -8 18 -16 22 c-8 4 -10 12 -20 8 c-10 -4 -4 -14 -8 -20 c-4 -8 6 -14 14 -20z" fill="#121110" opacity="0.82" /><circle cx="54" cy="44" r="3" fill="#121110" opacity="0.7" /><circle cx="8" cy="6" r="1.8" fill="#121110" opacity="0.6" /></svg>
+            <svg id="k-eraser" viewBox="0 0 190 90">
+              <filter id="k-er-f"><feGaussianBlur stdDeviation="6" /></filter>
+              <ellipse cx="80" cy="44" rx="70" ry="22" fill="#6e6a64" opacity="0.10" filter="url(#k-er-f)" transform="rotate(-8 80 44)" />
+              <path d="M30 52 q40 -18 92 -14" stroke="#6e6a64" stroke-width="10" opacity="0.07" fill="none" stroke-linecap="round" filter="url(#k-er-f)" />
+              <g fill="#cfc6b6"><ellipse cx="142" cy="60" rx="5" ry="2.2" transform="rotate(20 142 60)" /><ellipse cx="156" cy="52" rx="3.4" ry="1.6" /><ellipse cx="150" cy="70" rx="2.6" ry="1.4" transform="rotate(-30 150 70)" /></g>
+            </svg>
+          </div>
+          <div class="k-gutter"></div>
+          <div id="k-lab1" class="k-label">CROQUIS — STYLO BILLE</div>
+          <div id="k-lab2" class="k-label">FLASH — ENCRE</div>
+          <div id="k-p1-turnshade"></div>
+        </div>
+        <svg id="k-spiral" viewBox="0 0 70 1120"></svg>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const K = InkKit, $ = (s) => document.querySelector(s);
+      const T0 = 2.4; // début de la scène dans le film
+      const tl = gsap.timeline({ paused: true });
+      $("#k-spiral").innerHTML = K.spiralRings();
+
+      /* ---------- Page 1 : flash A tracé par-dessus le croquis (masque potrace) ---------- */
+      const MA = JINKX.align.A.matrix;
+      $("#k-amatrix").setAttribute("transform", `matrix(${MA[0][0]} ${MA[1][0]} ${MA[0][1]} ${MA[1][1]} ${MA[0][2]} ${MA[1][2]})`);
+      const stemTop = [MA[0][0] * 307 + MA[0][1] * 28 + MA[0][2], MA[1][0] * 307 + MA[1][1] * 28 + MA[1][2]];
+      const trA = new K.TraceReveal($("#k-amask-g"), JINKX.flashA.polys, { width: 22 });
+      trA.ease = K.ease("power2.inOut");
+      const byTop = trA.items.map((it, i) => [it.bbox[1], i]).sort((a, b) => a[0] - b[0]);
+      const rankA = []; byTop.forEach(([, i], r) => (rankA[i] = r));
+      const Lmax = Math.max(...trA.items.map((it) => it.L));
+      trA.schedule((it, i) => {
+        const s = 0.6 + 0.62 * (rankA[i] / trA.items.length);
+        const d = Math.min(0.32 + 0.55 * Math.sqrt(it.L / Lmax), 1.8 - s);
+        return [s, d];
+      });
+      tl.fromTo("#k-amask-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.35, ease: "power2.inOut" }, 1.55);
+      // le bleu se désature puis s'efface sous l'encre ; les lignes du cahier pâlissent
+      tl.fromTo("#k-aink", { filter: "saturate(1)", opacity: 1 }, { filter: "saturate(0)", duration: 0.7, ease: "power2.inOut" }, 0.6);
+      tl.to("#k-aink", { opacity: 0, duration: 0.7, ease: "power2.in" }, 1.1);
+      tl.fromTo("#k-apage", { opacity: 1 }, { opacity: 0.5, duration: 1.2, ease: "power2.inOut" }, 0.6);
+
+      /* ---------- micro-labels ---------- */
+      const lab = ["#k-lab1", "#k-lab2", "#k-lab3", "#k-lab4"].map((s) => K.splitLetters($(s)));
+      K.typeIn(tl, lab[0], 0.1, 0.03);
+      K.typeOut(tl, lab[0], 1.4, 0.016);
+      K.typeIn(tl, lab[1], 1.8, 0.035);
+      K.typeIn(tl, lab[2], 3.5, 0.03);
+      K.typeOut(tl, lab[2], 5.1, 0.016);
+      K.typeIn(tl, lab[3], 5.4, 0.035);
+
+      /* ---------- tourne de page à 5,4 s (local 3,0) ---------- */
+
+      /* ---------- Page 2 : l'éventail du croquis s'ouvre, puis le flash B se déploie pétale par pétale ---------- */
+      const MB = JINKX.align.B.matrix, sB = 1.4;
+      $("#k-fb").style.transform = `matrix(${sB * MB[0][0]}, ${sB * MB[1][0]}, ${sB * MB[0][1]}, ${sB * MB[1][1]}, ${-140 + sB * MB[0][2]}, ${250 + sB * MB[1][2]})`;
+      tl.fromTo("#k-bfan", { opacity: 1 }, { opacity: 0, duration: 1.3, ease: "power2.in" }, 4.3);
+      tl.fromTo(["#k-tasL", "#k-tasR"], { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 5.25);
+
+      const p1 = $("#k-p1"), p1push = $("#k-p1-push"), p2push = $("#k-p2-push"), cam = $("#k-cam");
+      const turnShade = $("#k-p1-turnshade"), p2shadow = $("#k-p2-shadow");
+      const bfan = $("#k-bfan"), fbInk = $("#k-fb-ink"), tasL = $("#k-tasL"), tasR = $("#k-tasR");
+      const bleedA = $("#k-bleedA-d"), bleedB = $("#k-bleedB-d"), ableed = $("#k-ableed"), fbBleed = $("#k-fb-bleed");
+      const breezeD = $("#k-breeze-d"), abreeze = $("#k-abreeze");
+      const pIO = K.ease("power2.inOut"), p4o = K.ease("power4.out");
+      const petals = (p) => { // progression « cran par cran » : 10 pétales
+        const N = 10, u = p * N, k = Math.min(N - 1, Math.floor(u)), f = u - k;
+        return Math.min(1, (k + K.smooth(K.smooth(f))) / N);
+      };
+
+      K.ticker(tl, 6.45, (t) => {
+        const tg = T0 + t;
+        const st = { turn: K.tw(t, 3.0, 0.45, 0, 180, "power3.in"), punch: t < 3.45 ? 1 : K.tw(t, 3.45, 0.35, 1.018, 1, "power4.out") };
+        K.applyCam(cam, tg, st.punch);
+        // push-in lent par page : 1.00 -> 1.06
+        p1push.style.transform = `scale(${(1 + 0.06 * K.clamp(t / 3.0)).toFixed(5)})`;
+        p2push.style.transform = `scale(${(1 + 0.06 * K.clamp((t - 3.0) / 3.45)).toFixed(5)})`;
+
+        // tracé du flash A
+        trA.render(t);
+        const bA = 6 * (1 - K.clamp((t - 0.6) / 1.4));
+        if (bA > 0.05) { ableed.setAttribute("filter", "url(#k-bleedA)"); bleedA.setAttribute("scale", bA.toFixed(2)); }
+        else ableed.removeAttribute("filter");
+        // brise dans les feuilles après le tracé
+        const bw = K.clamp((t - 1.7) / 0.6);
+        const ang = bw * (1.3 * Math.sin((2 * Math.PI * (t - 1.7)) / 2.4) + 0.4 * Math.sin((2 * Math.PI * (t - 1.7)) / 0.9));
+        abreeze.setAttribute("transform", `rotate(${ang.toFixed(3)} ${stemTop[0].toFixed(1)} ${stemTop[1].toFixed(1)})`);
+
+        // tourne de page : rotation 3D sur la reliure + ombre dynamique
+        const a = st.turn;
+        p1.style.transform = a > 0 ? `rotateY(${(-a).toFixed(3)}deg)` : "none";
+        p1.style.visibility = a >= 90 ? "hidden" : "visible";
+        const rad = (a * Math.PI) / 180;
+        turnShade.style.opacity = (Math.sin(rad) * 0.9).toFixed(3);
+        p2shadow.style.width = (1080 * Math.max(0, Math.cos(rad))).toFixed(1) + "px";
+        p2shadow.style.opacity = a > 0 && a < 90 ? (0.9 * Math.sin(rad * 1.6 > Math.PI ? Math.PI : rad * 1.6)).toFixed(3) : 0;
+
+        // l'éventail du croquis s'ouvre depuis le rivet (local 3,45 -> 4,05)
+        const fo = 141 * pIO(K.clamp((t - 3.45) / 0.6));
+        bfan.style.setProperty("--fo", fo.toFixed(2));
+        // flash B : balayage angulaire pétale par pétale (local 4,2 -> 5,4), puis révélation complète
+        const pf = petals(pIO(K.clamp((t - 4.2) / 1.2)));
+        fbInk.style.setProperty("--fa", (152 * pf).toFixed(2));
+        fbInk.style.setProperty("--fr", (900 * pIO(K.clamp((t - 5.15) / 0.35))).toFixed(1));
+        const bB = 6 * (1 - K.clamp((t - 4.2) / 1.45));
+        if (bB > 0.05) { fbBleed.style.filter = "url(#k-bleedB)"; bleedB.setAttribute("scale", bB.toFixed(2)); }
+        else fbBleed.style.filter = "none";
+        // pompons : pendule amorti, 2 oscillations, à partir de 7,8 s (local 5,4)
+        const tp = t - 5.4;
+        const swing = tp > 0 ? 9 * Math.exp(-1.6 * tp) * Math.sin(2 * Math.PI * 1.65 * tp) : 0;
+        tasL.style.transform = `rotate(${swing.toFixed(3)}deg)`;
+        tasR.style.transform = `rotate(${(swing * 0.8 + (tp > 0 ? 2.5 * Math.exp(-1.6 * tp) * Math.sin(2 * Math.PI * 1.65 * tp - 0.6) : 0)).toFixed(3)}deg)`;
+      });
+      window.__timelines["croquis"] = tl;
+    })();
+  </script>
+</template>

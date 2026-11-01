@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr" data-resolution="portrait"
+  data-composition-variables='[{"id":"ville","type":"string","label":"Ville (CTA)","default":"[VILLE]"}]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Jinkx Tatoo — Du carnet à la peau</title>
+    <script src="assets/lib/gsap.min.js"></script>
+    <script src="assets/lib/inkkit.js"></script>
+    <script src="assets/data/align.js"></script>
+    <script src="assets/data/flashA.js"></script>
+    <script src="assets/data/flashC.js"></script>
+    <script src="assets/data/peau1.js"></script>
+    <script src="assets/data/peau1dots.js"></script>
+    <script src="assets/data/signature.js"></script>
+    <style>
+      :root {
+        --paper: #ede6da;
+        --paper-shadow: #d9cfbf;
+        --ink: #121110;
+        --graphite: #6e6a64;
+        --vermillon: #c2381f;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--paper); }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--paper); }
+      .scene { position: absolute; inset: 0; }
+      /* Textures globales posées sur tout le film */
+      .fx { position: absolute; inset: 0; pointer-events: none; }
+      #fx-paper { z-index: 50; mix-blend-mode: multiply; opacity: 0.25; }
+      #fx-fiber { z-index: 51; mix-blend-mode: multiply; opacity: 0.10; }
+      #fx-vignette {
+        z-index: 52; mix-blend-mode: multiply; opacity: 0.75;
+        background: radial-gradient(ellipse 78% 62% at 50% 48%, rgba(217, 207, 191, 0) 58%, rgba(217, 207, 191, 0.85) 100%);
+      }
+      #fx-grain {
+        z-index: 53; mix-blend-mode: overlay; opacity: 0.06;
+        background-image: url("assets/img/grain.png"); background-size: 512px 512px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="22" data-width="1080" data-height="1920" data-fps="30">
+      <div id="carnet" class="scene" data-composition-id="carnet" data-composition-src="compositions/carnet.html"
+        data-start="0" data-duration="2.4" data-track-index="1" data-track-kind="graphics" data-width="1080" data-height="1920" style="z-index:1"></div>
+      <div id="croquis" class="scene" data-composition-id="croquis" data-composition-src="compositions/croquis.html"
+        data-start="2.4" data-duration="6.45" data-track-index="2" data-track-kind="graphics" data-width="1080" data-height="1920" style="z-index:2"></div>
+      <div id="aiguille" class="scene" data-composition-id="aiguille" data-composition-src="compositions/aiguille.html"
+        data-start="8.4" data-duration="5.4" data-track-index="3" data-track-kind="graphics" data-width="1080" data-height="1920" style="z-index:3"></div>
+      <div id="peau" class="scene" data-composition-id="peau" data-composition-src="compositions/peau.html"
+        data-start="13.2" data-duration="4.8" data-track-index="4" data-track-kind="graphics" data-width="1080" data-height="1920" style="z-index:4"></div>
+      <div id="signature" class="scene" data-composition-id="signature" data-composition-src="compositions/signature.html"
+        data-start="18" data-duration="4" data-track-index="5" data-track-kind="graphics" data-width="1080" data-height="1920" style="z-index:5"></div>
+
+      <!-- Textures : grain papier (feTurbulence), fibres, vignettage chaud, grain film -->
+      <svg id="fx-paper" class="fx" width="1080" height="1920" viewBox="0 0 1080 1920" aria-hidden="true">
+        <filter id="fx-paper-f" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="11" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.52  0 0 0 0 0.48  -1.2 0 0 0 1.05" />
+        </filter>
+        <rect width="1080" height="1920" filter="url(#fx-paper-f)" />
+      </svg>
+      <svg id="fx-fiber" class="fx" width="1080" height="1920" viewBox="0 0 1080 1920" aria-hidden="true">
+        <filter id="fx-fiber-f" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.022" numOctaves="4" seed="4" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0.5  0 0 0 0 0.46  0 0 0 0 0.4  -1.6 0 0 0 1.1" />
+        </filter>
+        <rect width="1080" height="1920" filter="url(#fx-fiber-f)" />
+      </svg>
+      <div id="fx-vignette" class="fx"></div>
+      <div id="fx-grain" class="fx"></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      // Grain film régénéré toutes les 2 frames (décalage pseudo-aléatoire de la tuile), frame 659 = frame 0
+      const grain = document.getElementById("fx-grain");
+      InkKit.ticker(tl, 22, (t) => {
+        const f = Math.min(659, Math.round(t * 30));
+        const seed = f >= 659 ? 0 : Math.floor(f / 2);
+        const r = InkKit.mulberry32(seed * 7919 + 13);
+        grain.style.backgroundPosition = `${Math.floor(r() * 512)}px ${Math.floor(r() * 512)}px`;
+      });
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

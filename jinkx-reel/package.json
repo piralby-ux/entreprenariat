@@ -1,0 +1,17 @@
+{
+  "name": "jinkx-reel",
+  "private": true,
+  "description": "Reel Instagram « Du carnet à la peau » pour Jinkx Tatoo (HyperFrames)",
+  "scripts": {
+    "assets": "scripts/build_assets.sh",
+    "check": "hyperframes check",
+    "preview": "hyperframes preview",
+    "render": "hyperframes render -o out/jinkx-reel_22s_silent.mp4 -q delivery -f 30",
+    "cover": "node scripts/cover.cjs"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0",
+    "hyperframes": "0.8.228",
+    "potrace": "^2.1.8"
+  }
+}
