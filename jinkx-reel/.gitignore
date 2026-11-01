@@ -3,3 +3,4 @@ node_modules/
 prep/
 out/render.log
 out/.*
+out/work-*/

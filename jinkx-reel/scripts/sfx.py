@@ -115,28 +115,29 @@ def swell(dur, rev=False):  # aspiration / révélation à l'encre
     return s[::-1] if rev else s
 
 
-# --- placement (temps du film) ---
-place(flap(0.4, 2200), 0.6, 0.55, -0.3)        # la couverture s'ouvre
-place(thump(70, 0.2), 0.95, 0.35, -0.4)
-place(swell(0.9), 1.5, 0.12)                    # la caméra plonge
-place(scratch(1.2, 1), 3.0, 0.20, 0.15)         # morph A : stylo
-place(swish(0.45), 5.4, 0.45, -0.2)             # tourne de page
-place(thump(110, 0.12), 5.85, 0.30, -0.1)       # le « tac »
-place(swish(0.5, 900, 6000), 5.85, 0.16, 0.25)  # l'éventail s'ouvre
+# --- placement (temps du film, V2) ---
+place(flap(0.4, 2200), 0.3, 0.55, -0.3)        # la couverture s'ouvre (avant 0,5 s)
+place(thump(70, 0.2), 0.62, 0.35, -0.4)
+place(swell(1.0), 1.4, 0.12)                    # la caméra plonge dans la page
+place(scratch(1.4, 1), 3.0, 0.20, 0.15)         # morph A : stylo
+place(swish(0.5), 5.4, 0.45, -0.2)              # tourne de page (feuille souple)
+place(thump(110, 0.12), 5.9, 0.28, -0.1)
+place(swish(0.55, 900, 6000), 5.9, 0.16, 0.25)  # l'éventail s'ouvre
 place(scratch(1.2, 2), 6.6, 0.20, 0.2)          # morph B : crayon
-place(swell(0.45), 8.0, 0.22)                   # révélation à l'encre
-place(machine(2.45), 8.62, 0.30, 0.25)          # machine à tatouer
+place(swell(0.5), 7.9, 0.18)                    # plongée dans le rivet
+place(swish(0.7, 120, 1400), 8.4, 0.30)         # l'encre se dissout dans l'eau
+place(machine(2.3), 8.6, 0.30, 0.25)            # machine à tatouer
 for k, at in enumerate([11.4, 11.7, 12.0, 12.3, 12.6, 12.9]):
     place(tick(), at, 0.35, (-1) ** k * 0.3)    # match cuts
-place(gloop(0.7), 13.2, 0.38)                   # l'encre coule
-place(scratch(0.9, 3, 14), 13.8, 0.14, 0.1)     # tracé sur la peau
-place(swish(0.5, 300, 2500), 15.55, 0.32, -0.25)  # le tirage glisse
-place(thump(140, 0.08), 16.15, 0.18)
-place(swell(0.6, rev=False), 17.4, 0.25)        # l'encre se rétracte
-place(tick(), 17.98, 0.25)
-place(scratch(1.4, 4, 9), 18.2, 0.20, -0.1)     # signature
+place(swish(0.6, 200, 2200), 13.2, 0.25, 0.1)   # le vase s'efface, les herbes restent
+place(scratch(0.8, 5, 9), 13.25, 0.10, -0.1)    # la silhouette du bras se trace
+place(scratch(1.0, 3, 14), 14.0, 0.14, 0.1)     # tatouage sur la peau
+place(swish(0.6, 300, 2500), 15.6, 0.32, -0.25) # la caméra glisse, le tirage arrive
+place(thump(140, 0.08), 16.2, 0.18)
+place(swell(0.6), 17.4, 0.25)                   # l'encre se rétracte vers la plume
+place(scratch(1.15, 4, 9), 18.0, 0.20, -0.1)    # « Jinkx » s'écrit
 place(thump(85, 0.22), 19.95, 0.75)             # le tampon : « tok » sourd
-place(flap(0.45, 1800), 21.28, 0.45, -0.35)     # la couverture se referme
+place(flap(0.45, 1800), 21.32, 0.45, -0.35)     # la couverture se referme
 place(thump(65, 0.25), 21.86, 0.5, -0.2)
 
 mix = np.stack([L, R], 1)

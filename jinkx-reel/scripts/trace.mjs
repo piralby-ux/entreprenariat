@@ -6,6 +6,7 @@ const jobs = [
   ['prep/flashA_bw.png', 'assets/data/flashA_paths.json'],
   ['prep/flashC_bw.png', 'assets/data/flashC_paths.json'],
   ['prep/peau1_bw.png', 'assets/data/peau1_paths.json'],
+  ['prep/peau1sil_bw.png', 'assets/data/peau1sil_paths.json'],
 ];
 fs.mkdirSync('assets/data', { recursive: true });
 for (const [src, dst] of jobs) {

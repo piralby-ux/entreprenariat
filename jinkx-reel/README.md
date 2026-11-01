@@ -7,31 +7,36 @@ Reel Instagram de lancement, réalisé avec **HyperFrames** (HTML + CSS + GSAP �
 
 | Fichier | Contenu |
 |---|---|
-| `jinkx-reel_22s_silent.mp4` | Le Reel, **sans son** (la musique sera ajoutée dans Instagram) |
-| `jinkx-reel_22s_sfx.mp4` | La même vidéo avec la piste de sound design |
+| `jinkx-reel_v2_22s_silent.mp4` | **V2** — le Reel, **sans son** (la musique sera ajoutée dans Instagram) |
+| `jinkx-reel_v2_22s_sfx.mp4` | **V2** — la même vidéo avec la piste de sound design |
+| `jinkx-reel_22s_silent.mp4`, `jinkx-reel_22s_sfx.mp4` | V1 (archive) |
 | `sfx.wav` | Sound design seul, synthétisé (aucun sample) |
 | `jinkx-reel_cover.png` | Image de couverture 1080 × 1920 (flash éventail, « Jinkx », sceau) |
 
-## Timeline (tempo implicite 100 BPM, un temps = 0,6 s)
+## Timeline V2 (tempo implicite 100 BPM, un temps = 0,6 s)
 
 | Temps | Plan | Ce qui se passe |
 |---|---|---|
-| 0,0 → 2,4 | 1 · Carnet | Carnet fermé (sceau « J », `SKETCHBOOK — 2026`), il respire ; **0,6** la couverture s'ouvre d'un coup (3D, ombre qui balaie la page) ; plongée caméra dans la page de droite |
-| 2,4 → 5,4 | 2 · Page 1 | Croquis A au stylo bleu ; `CROQUIS — STYLO BILLE` ; **3,0** le flash A se trace par-dessus (masque potrace), le bleu se désature puis s'efface, les lignes pâlissent ; **4,2** `FLASH — ENCRE`, brise dans les feuilles |
-| 5,4 | Tourne de page | Rotation 3D sur la spirale, ombre dynamique, « tac » |
-| 5,4 → 8,4 | 2 · Page 2 | Croquis B (crayon) ; l'éventail s'ouvre depuis le rivet ; **6,6** le flash B se déploie pétale par pétale ; **7,8** `FLASH — 17.10`, les pompons se balancent |
-| 8,4 → 11,4 | 3 · Aiguille | Révélation à l'encre depuis le rivet ; la machine entre par la droite et retrace le vase (contour, puis fleurs et longues herbes), éclaboussures, vibration ; puis les gris arrivent en ombrage |
-| 11,4 → 13,2 | 3 · Match cuts | Toutes les 0,3 s : vase → éventail → feuilles → chrysanthème → mèche du croquis B → vase, avec un flash papier de 2 frames |
-| 13,2 → 18,0 | 4 · Sur peau | L'encre coule et révèle le bras (Procreate) ; le tatouage ornemental se trace, les points tombent sur la grille ; **15,6** le tirage du pied glisse et se pose (−4°), le tribal se remplit de haut en bas ; **17,4** l'encre se rétracte en un point |
-| 18,0 → 21,0 | 5 · Signature | « Jinkx » s'écrit à la main (monoline) ; **19,8** le sceau vermillon se tamponne ; CTA |
-| 21,0 → 22,0 | Boucle | Recul vers le carnet, la couverture se referme depuis la gauche → première image |
+| 0,0 → 2,4 | 1 · Carnet | Dès la frame 0, la caméra descend sur le carnet (1,15 → 1) ; sceau « J » ×2 ; **0,3** la couverture s'ouvre ; plongée dans la page de droite |
+| 2,4 → 5,4 | 2 · Page 1 | Croquis A au stylo bleu ; **3,0** le flash A se trace (départ des traits en pointe), le bleu se désature puis s'efface ; **4,2** `FLASH — ENCRE`, brise dans les feuilles |
+| 5,4 → 5,9 | Tourne de page | Vraie feuille qui tourne autour de la spirale (8 bandes 3D, courbure souple), verso plus sombre avec le dessin en transparence à 8 %, ombre dynamique |
+| 5,9 → 8,4 | 2 · Page 2 | Croquis B ; l'éventail s'ouvre depuis le rivet ; **6,6** flash B pétale par pétale ; **7,8** `FLASH — 17.10`, pompons ; la caméra plonge dans le rivet |
+| 8,4 → 9,0 | Dissolution | L'encre de l'éventail se dissout comme une goutte dans l'eau (nuages de papier aux bords effilochés, turbulences animées) |
+| 8,85 → 11,4 | 3 · Aiguille | Machine rotative « pen » (grip strié, bague, pointe métal, câble RCA) : trace le vase, se lève entre deux traits, vibre seulement en traçant, ombre courte |
+| 11,4 → 13,2 | 3 · Match cuts | Gros plans d'encre sur papier uni, même centre : vase → éventail → feuilles → chrysanthème → herbes → vase |
+| 13,2 → 13,8 | Match cut de forme | Le haut du vase s'efface (front d'encre turbulent), les longues herbes restent et passent la main à la silhouette du bras |
+| 13,8 → 15,6 | 4 · Bras | Silhouette nette (gris crayon 60 %), tatouage au tiers central, points sur la grille |
+| 15,6 → 17,4 | 4 · Pied | La caméra glisse vers le bas : le tirage du pied arrive seul (70 % de la largeur), détouré sur fond encre ; le tribal se remplit |
+| 17,4 → 18,0 | Rétractation | L'encre se rétracte en douceur vers le point où la plume va commencer |
+| 18,0 → 21,0 | 5 · Signature | Wordmark « Jinkx » à pleins et déliés (Pinyon Script, 750 px) révélé par un masque qui suit le tracé central, goutte et points ornementaux ; CTA complet à 19,5 s ; **19,8** tampon |
+| 21,0 → 22,0 | Boucle | Recul vers le carnet (échelle 1,15), la couverture se referme → première image |
 
 ## Modifier la ville du CTA
 
-Le CTA affiche `TATOUEUSE · [VILLE]` par défaut. Pour la ville réelle :
+Sans ville renseignée, la ligne « TATOUEUSE · … » n'apparaît pas. Pour l'ajouter :
 
 ```bash
-npx hyperframes render -o out/jinkx-reel_22s_silent.mp4 -q delivery -f 30 --variables '{"ville":"Lyon"}'
+npx hyperframes render -o out/jinkx-reel_v2_22s_silent.mp4 -q delivery -f 30 --variables '{"ville":"Lyon"}'
 ```
 
 ## Structure
@@ -51,7 +56,7 @@ npm run assets     # images détourées, alignements, vectorisation potrace, sig
 npm run check      # contrôle HyperFrames
 npm run render     # MP4 sans son
 npm run cover      # image de couverture
-ffmpeg -i out/jinkx-reel_22s_silent.mp4 -i out/sfx.wav -c:v copy -c:a aac -b:a 192k -shortest out/jinkx-reel_22s_sfx.mp4
+ffmpeg -i out/jinkx-reel_v2_22s_silent.mp4 -i out/sfx.wav -c:v copy -c:a aac -b:a 192k -shortest out/jinkx-reel_v2_22s_sfx.mp4
 ```
 
 ## Préparation des images (résumé)

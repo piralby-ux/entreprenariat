@@ -23,11 +23,16 @@
     #g-back-shade { position: absolute; inset: 0; background: linear-gradient(270deg, rgba(18,17,16,0.35), rgba(18,17,16,0) 40%); opacity: 1; }
     #g-label { position: absolute; left: 0; width: 100%; top: 1000px; text-align: center; font-family: "JetBrains Mono", monospace; font-weight: 500;
       font-size: 24px; letter-spacing: 0.15em; color: rgba(217, 207, 191, 0.78); }
-    #g-seal { position: absolute; left: 270px; top: 470px; width: 112px; height: 112px; }
-    #g-stampwrap { position: absolute; left: 722px; top: 842px; width: 180px; height: 180px; transform-origin: 50% 50%; }
-    .g-cta { position: absolute; left: 0; width: 1080px; text-align: center; font-family: "JetBrains Mono", monospace; font-weight: 500;
-      font-size: 28px; letter-spacing: 0.15em; color: #121110; white-space: pre; top: 1130px; }
-    .g-cta-sub { top: 1192px; font-size: 27px; letter-spacing: 0.1em; color: #6e6a64; }
+    #g-seal { position: absolute; left: 214px; top: 360px; width: 224px; height: 224px; }
+    #g-stampwrap { position: absolute; left: 742px; top: 700px; width: 180px; height: 180px; transform-origin: 50% 50%; }
+    .g-cta { position: absolute; left: 0; width: 1080px; text-align: center; white-space: pre; }
+    /* l'interlettrage ajoute un espace après la dernière lettre : on le compense pour un vrai centrage */
+    .g-mono { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 28px; letter-spacing: 0.12em; padding-left: 0.12em; color: rgba(18, 17, 16, 0.75); }
+    #g-ville { top: 912px; visibility: hidden; }
+    #g-cta1 { top: 966px; }
+    #g-cta2 { top: 1012px; font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 500; font-size: 44px; color: #121110; text-transform: uppercase; letter-spacing: 0.06em; padding-left: 0.06em;
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--w, 0) * 1% - 8%), transparent calc(var(--w, 0) * 1%));
+      mask-image: linear-gradient(90deg, #000 calc(var(--w, 0) * 1% - 8%), transparent calc(var(--w, 0) * 1%)); }
     #g-spiral { left: 186px; top: 400px; width: 70px; height: 1120px; overflow: visible; }
   </style>
   <div id="root" data-composition-id="signature" data-width="1080" data-height="1920">
@@ -38,41 +43,58 @@
         <div class="g-abs g-stack" style="left:223px; top:394px"></div>
         <div id="g-page" class="g-abs">
           <div id="g-pagecontent">
+            <!-- wordmark « Jinkx » : contour plein/délié (Pinyon Script) révélé par un masque qui suit le tracé central -->
             <svg id="g-sig" width="1080" height="1920" viewBox="0 0 1080 1920" style="position:absolute;left:0;top:0;overflow:visible">
               <defs>
+                <mask id="g-wm-mask" maskUnits="userSpaceOnUse" x="-60" y="-60" width="960" height="540">
+                  <g id="g-wm-mg"></g>
+                  <rect id="g-wm-full" x="-60" y="-60" width="960" height="540" fill="#fff" opacity="0" />
+                </mask>
                 <filter id="g-bleed" x="-5%" y="-5%" width="110%" height="110%">
                   <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="17" result="n" />
                   <feDisplacementMap id="g-bleed-d" in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" />
                 </filter>
               </defs>
-              <g id="g-sig-g" filter="url(#g-bleed)" fill="none" stroke="#121110" stroke-linecap="round" stroke-linejoin="round"></g>
+              <g id="g-wm">
+                <g id="g-wm-ink" filter="url(#g-bleed)">
+                  <g mask="url(#g-wm-mask)"><path id="g-wm-path" fill="#121110" /></g>
+                </g>
+                <g id="g-orn" fill="#121110"></g>
+              </g>
             </svg>
             <!-- sceau vermillon JINKX TATOO -->
             <div id="g-stampwrap">
               <svg id="g-stamp" viewBox="0 0 180 180" width="180" height="180">
                 <defs>
-                  <filter id="g-stamp-wear" x="-10%" y="-10%" width="120%" height="120%">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" seed="23" result="n" />
-                    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 2.05" result="holes" />
-                    <feComposite in="SourceGraphic" in2="holes" operator="in" result="worn" />
-                    <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="4" result="n2" />
-                    <feDisplacementMap in="worn" in2="n2" scale="3" xChannelSelector="R" yChannelSelector="G" />
+                  <filter id="g-stamp-ink" x="-8%" y="-8%" width="116%" height="116%">
+                    <!-- bords irréguliers -->
+                    <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="3" seed="4" result="n2" />
+                    <feDisplacementMap in="SourceGraphic" in2="n2" scale="7" xChannelSelector="R" yChannelSelector="G" result="edge" />
+                    <!-- pression inégale : 85–100 % -->
+                    <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="31" result="p" />
+                    <feColorMatrix in="p" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.3 0 0 0 0.72" result="press" />
+                    <!-- petits manques d'encre -->
+                    <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="23" result="n" />
+                    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -3 2.75" result="holes" />
+                    <feComposite in="edge" in2="press" operator="in" result="e2" />
+                    <feComposite in="e2" in2="holes" operator="in" />
                   </filter>
                   <mask id="g-stamp-text">
                     <rect width="180" height="180" fill="#fff" />
-                    <rect x="17" y="17" width="146" height="146" rx="9" fill="none" stroke="#000" stroke-width="3" />
-                    <text x="90" y="84" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="44" letter-spacing="2" fill="#000">JINKX</text>
-                    <text x="90" y="128" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="44" letter-spacing="2" fill="#000">TATOO</text>
-                    <line x1="52" y1="99" x2="128" y2="99" stroke="#000" stroke-width="1.6" />
+                    <rect x="16" y="16" width="148" height="148" rx="8" fill="none" stroke="#000" stroke-width="2.6" />
+                    <text x="90" y="82" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="31" letter-spacing="2.5" fill="#000">JINKX</text>
+                    <line x1="58" y1="96" x2="122" y2="96" stroke="#000" stroke-width="1.4" />
+                    <text x="90" y="128" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="31" letter-spacing="2.5" fill="#000">TATOO</text>
                   </mask>
                 </defs>
-                <g filter="url(#g-stamp-wear)">
-                  <rect x="6" y="6" width="168" height="168" rx="16" fill="#c2381f" mask="url(#g-stamp-text)" />
+                <g filter="url(#g-stamp-ink)">
+                  <rect x="6" y="6" width="168" height="168" rx="14" fill="#c2381f" mask="url(#g-stamp-text)" />
                 </g>
               </svg>
             </div>
-            <div id="g-cta1" class="g-cta">TATOUEUSE · [VILLE]</div>
-            <div id="g-cta2" class="g-cta g-cta-sub">FLASHS DISPONIBLES — RÉSERVATIONS EN DM</div>
+            <div id="g-ville" class="g-cta g-mono">TATOUEUSE</div>
+            <div id="g-cta1" class="g-cta g-mono">FLASHS DISPONIBLES</div>
+            <div id="g-cta2" class="g-cta g-serif">Réservations en DM</div>
           </div>
           <div id="g-gutter"></div>
           <div id="g-pageshade"></div>
@@ -126,65 +148,89 @@
       $("#g-spiral").innerHTML = K.spiralRings();
 
       const T0 = 18.0;
-      // ville du CTA : variable de la vidéo (hyperframes render --variables '{"ville":"Lyon"}')
-      let ville = "[VILLE]";
-      try { const v = window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables(); if (v && v.ville) ville = v.ville; } catch (e) {}
-      $("#g-cta1").textContent = "TATOUEUSE · " + ville.toUpperCase();
+      const NS = "http://www.w3.org/2000/svg";
+      // ville : variable de la vidéo (hyperframes render --variables '{"ville":"Lyon"}') ; sans ville, la ligne n'apparaît pas
+      let ville = "";
+      try { const v = window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables(); if (v && v.ville && !/^\[/.test(v.ville)) ville = v.ville; } catch (e) {}
+      if (ville) { $("#g-ville").textContent = "TATOUEUSE · " + ville.toUpperCase(); }
 
-      /* « Jinkx » écrit à la main : tracé monoline (squelette de Mrs Saint Delafield), 18,2 -> 19,6 */
-      const SIG = JINKX.signature, sg = $("#g-sig-g");
-      const SS = 1.45, bx = SIG.bbox;
-      const sx = (1080 - (bx[2] - bx[0]) * SS) / 2 - 28 - bx[0] * SS, sy = 360 - bx[1] * SS;
-      sg.setAttribute("transform", `translate(${sx.toFixed(1)} ${sy.toFixed(1)}) scale(${SS})`);
-      sg.setAttribute("stroke-width", (7.2 / SS).toFixed(2));
-      const strokes = SIG.strokes.map((d) => {
-        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        p.setAttribute("d", d); sg.appendChild(p);
-        const L = p.getTotalLength(); p.setAttribute("stroke-dasharray", `${L} ${L + 10}`); p.setAttribute("stroke-dashoffset", L);
-        return { p, L };
+      /* wordmark */
+      const WM = JINKX.wordmark;
+      $("#g-wm").setAttribute("transform", `translate(${WM.x0} ${WM.y0})`);
+      const wp = $("#g-wm-path"); wp.setAttribute("d", WM.d); wp.setAttribute("transform", WM.transform);
+      const mg = $("#g-wm-mg");
+      const strokes = WM.strokes.map((st) => {
+        const p = document.createElementNS(NS, "path");
+        p.setAttribute("d", st.d); p.setAttribute("fill", "none"); p.setAttribute("stroke", "#fff");
+        p.setAttribute("stroke-width", st.w); p.setAttribute("stroke-linecap", "round"); p.setAttribute("stroke-linejoin", "round");
+        p.setAttribute("stroke-dasharray", `${st.L} ${st.L + 20}`); p.setAttribute("stroke-dashoffset", st.L);
+        mg.appendChild(p);
+        return { p, L: st.L };
       });
-      const total = strokes.reduce((a, s) => a + s.L + 40, 0);
+      const total = strokes.reduce((a, s) => a + s.L + 25, 0);
       let acc = 0;
-      strokes.forEach((s) => { s.a = acc / total; acc += s.L + 40; s.b = (acc - 40) / total; });
+      strokes.forEach((s) => { s.a = acc / total; acc += s.L + 25; s.b = (acc - 25) / total; });
+      // ornements repris de ses flashs : une goutte au bout du « x », des grappes de trois points comme sur le bras
+      const last = WM.strokes[WM.strokes.length - 1].d.slice(1).split(" L").map((q) => q.split(" ").map(Number));
+      const e1 = last[last.length - 1], e0 = last[Math.max(0, last.length - 6)];
+      const ang = (Math.atan2(e1[1] - e0[1], e1[0] - e0[0]) * 180) / Math.PI;
+      const orn = $("#g-orn"), ornEls = [];
+      const drop = document.createElementNS(NS, "path");
+      drop.setAttribute("d", "M0 0 C7 -3.2 15 -7.5 23 -6.8 C30 -6 31.5 6 23 6.8 C15 7.5 7 3.2 0 0Z");
+      drop.setAttribute("transform", `translate(${e1[0].toFixed(1)} ${e1[1].toFixed(1)}) rotate(${ang.toFixed(1)})`);
+      orn.appendChild(drop); ornEls.push({ el: drop, at: 1.12, kind: "drop", tf: drop.getAttribute("transform") });
+      const clusters = [[e1[0] + 40, e1[1] + 30], [118, 300]];
+      clusters.forEach(([cx, cy], ci) => {
+        [[0, 0, 5.2], [13, -5, 4], [9, 11, 3.4]].forEach(([dx, dy, r], di) => {
+          const c = document.createElementNS(NS, "circle");
+          c.setAttribute("cx", cx + dx); c.setAttribute("cy", cy + dy); c.setAttribute("r", 0);
+          orn.appendChild(c); ornEls.push({ el: c, at: 1.15 + ci * 0.15 + di * 0.05, kind: "dot", r });
+        });
+      });
+      tl.fromTo("#g-wm-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.2 }, 1.05);
 
-      /* CTA tapé en mono */
-      const cta1 = K.splitLetters($("#g-cta1")), cta2 = K.splitLetters($("#g-cta2"));
-      K.typeIn(tl, cta1, 1.95, 0.022);
-      K.typeIn(tl, cta2, 2.1, 0.016);
+      /* CTA : la ligne mono se tape, la ligne serif s'écrit en balayage doux ; complet à 19,5 s */
+      if (ville) { tl.set("#g-ville", { visibility: "visible" }, 0); K.typeIn(tl, K.splitLetters($("#g-ville")), 0.75, 0.014); }
+      K.typeIn(tl, K.splitLetters($("#g-cta1")), 0.9, 0.016);
 
-      const cam = $("#g-cam"), nb = $("#g-nb"), cover = $("#g-cover"), stamp = $("#g-stampwrap");
+      const cam = $("#g-cam"), nb = $("#g-nb"), cover = $("#g-cover"), stamp = $("#g-stampwrap"), cta2 = $("#g-cta2");
       const shade = $("#g-pageshade"), frontShade = $("#g-front-shade"), backShade = $("#g-back-shade");
-      const bleed = $("#g-bleed-d"), sigG = $("#g-sig-g");
-      const writeE = K.ease("sine.inOut");
+      const bleed = $("#g-bleed-d"), ink = $("#g-wm-ink");
+      const writeE = K.ease("sine.inOut"), p4o = K.ease("power4.out");
       K.ticker(tl, 4.0, (t) => {
         const tg = T0 + t;
-        // écriture
-        const w = writeE(K.clamp((t - 0.2) / 1.4));
+        // 18,0 : la plume part du point où l'encre s'est rétractée
+        const w = writeE(K.clamp(t / 1.15));
         for (const s of strokes) {
           const k = K.clamp((w - s.a) / (s.b - s.a));
           s.p.setAttribute("stroke-dashoffset", (s.L * (1 - k)).toFixed(2));
           s.p.style.visibility = k > 0 ? "visible" : "hidden";
         }
-        const b = 4 * (1 - K.clamp((t - 0.2) / 1.7));
-        if (b > 0.05) { sigG.setAttribute("filter", "url(#g-bleed)"); bleed.setAttribute("scale", b.toFixed(2)); } else sigG.removeAttribute("filter");
-        // 19,8 : le sceau se tamponne (1.3 -> 1 en 0,15 s, léger écrasement)
+        const b = 4 * (1 - K.clamp(t / 1.5));
+        if (b > 0.05) { ink.setAttribute("filter", "url(#g-bleed)"); bleed.setAttribute("scale", b.toFixed(2)); } else ink.removeAttribute("filter");
+        for (const o of ornEls) {
+          const k = p4o(K.clamp((t - o.at) / 0.14));
+          if (o.kind === "dot") o.el.setAttribute("r", (o.r * k).toFixed(2));
+          else { o.el.setAttribute("transform", `${o.tf} scale(${k.toFixed(3)})`); o.el.style.visibility = k > 0 ? "visible" : "hidden"; }
+        }
+        cta2.style.setProperty("--w", K.tw(t, 1.2, 0.35, 0, 110, "power2.inOut").toFixed(2));
+        // 19,8 : le sceau se tamponne (1.3 -> 1 en 0,15 s, léger écrasement), rotation −3°
         const ts = t - 1.8;
         let sc = 1.3, sqx = 1, sqy = 1, op = 0;
         if (ts >= 0) {
-          op = 1;
           sc = K.tw(ts, 0, 0.15, 1.3, 1, "power4.in");
           const sq = ts < 0.15 ? 0 : Math.exp(-(ts - 0.15) * 22) * Math.cos((ts - 0.15) * 40);
           sqx = 1 + 0.035 * sq; sqy = 1 - 0.05 * sq;
           op = K.tw(ts, 0, 0.06, 0, 1, "none");
         }
-        stamp.style.transform = `rotate(-5deg) scale(${(sc * sqx).toFixed(4)}, ${(sc * sqy).toFixed(4)})`;
+        stamp.style.transform = `rotate(-3deg) scale(${(sc * sqx).toFixed(4)}, ${(sc * sqy).toFixed(4)})`;
         stamp.style.opacity = op.toFixed(3);
 
-        // 21,0 : recul caméra vers le carnet, la couverture se referme depuis la gauche (boucle sur la 1re image)
-        const zoom = t < 3.0 ? 1080 / 640 : K.tw(t, 3.0, 0.6, 1080 / 640, 1, "expo.inOut");
+        // 21,0 : recul vers le carnet (échelle 1,15 = première image), la couverture se referme depuis la gauche
+        const zoom = t < 3.0 ? 1080 / 640 : K.tw(t, 3.0, 0.6, 1080 / 640, 1.15, "expo.inOut");
         K.applyCam(cam, tg, zoom);
         nb.style.transform = "scale(1)";
-        const a = K.tw(t, 3.28, 0.6, 180, 0, "power3.inOut");
+        const a = K.tw(t, 3.32, 0.56, 180, 0, "power3.inOut");
         cover.style.transform = `rotateY(${(-a).toFixed(3)}deg)`;
         const rad = (a * Math.PI) / 180;
         const c = Math.max(0, Math.cos(rad));

@@ -1,8 +1,8 @@
 <template>
   <style>
     #root { position: absolute; inset: 0; overflow: hidden; background: #ede6da; }
-    #k-cam { position: absolute; inset: 0; transform-origin: 540px 960px; }
-    #k-book { position: absolute; inset: 0; perspective: 2300px; perspective-origin: 540px 960px; }
+    #k-cam { position: absolute; inset: 0; transform-origin: 410px 957px; }
+    #k-book { position: absolute; inset: 0; perspective: 1800px; perspective-origin: 540px 960px; }
     .k-page { position: absolute; inset: 0; background: #ede6da; overflow: hidden; }
     .k-push { position: absolute; inset: 0; background: #ede6da; transform-origin: 540px 900px; }
     .k-abs { position: absolute; display: block; }
@@ -12,12 +12,20 @@
     #k-p2-shadow { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: linear-gradient(90deg, rgba(18,17,16,0.5), rgba(18,17,16,0.12) 75%, rgba(18,17,16,0)); opacity: 0; }
     #k-spiral { position: absolute; left: -57.4px; top: 15px; width: 118.1px; height: 1890px; overflow: visible; }
     .k-label { position: absolute; left: 92px; top: 286px; font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 28px;
-      letter-spacing: 0.15em; color: #6e6a64; white-space: pre; }
+      letter-spacing: 0.12em; color: rgba(18, 17, 16, 0.75); white-space: pre; }
+    /* tourne de page : bandes verticales chaînées en 3D (feuille souple) */
+    #k-turn { position: absolute; inset: 0; transform-style: preserve-3d; visibility: hidden; }
+    .k-strip { position: absolute; top: 0; height: 1920px; transform-origin: 0 50%; transform-style: preserve-3d; }
+    .k-face { position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .k-back { transform: rotateY(180deg); background: #e0d7c8; }
+    .k-fshade, .k-bshade { position: absolute; inset: 0; background: #121110; opacity: 0; }
+    .k-clone { position: absolute; top: 0; width: 1080px; height: 1920px; background: #ede6da; }
+    .k-ghost { position: absolute; top: 0; width: 1080px; height: 1920px; transform: scaleX(-1); opacity: 0.08; }
     #k-blot { position: absolute; left: 868px; top: 318px; width: 60px; height: 52px; }
     #k-eraser { position: absolute; left: 96px; top: 1560px; width: 190px; height: 90px; }
     /* éventail du croquis : s'ouvre par un masque radial depuis le rivet */
-    #k-bfan { -webkit-mask-image: conic-gradient(from 343deg at 616px 662px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg));
-      mask-image: conic-gradient(from 343deg at 616px 662px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg)); }
+    #k-bfan { -webkit-mask-image: conic-gradient(from 343deg at 726px 780px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg));
+      mask-image: conic-gradient(from 343deg at 726px 780px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg)); }
     #k-fb { position: absolute; left: 0; top: 0; width: 692px; height: 785px; transform-origin: 0 0; }
     #k-fb-ink { position: absolute; left: 0; top: 0; width: 692px; height: 785px;
       -webkit-mask-image: conic-gradient(from 348deg at 231px 452px, #000 0deg, #000 calc(var(--fa, 0) * 1deg), transparent calc(var(--fa, 0) * 1deg + 0.8deg)),
@@ -48,8 +56,8 @@
         <!-- PAGE 2 : croquis B (éventail + mèches, crayon) -> flash B -->
         <div id="k-p2" class="k-page">
           <div id="k-p2-push" class="k-push">
-            <img class="k-abs" src="assets/img/croquisB_page.jpg" style="left:-140px; top:250px; width:1078px; height:1533px; mix-blend-mode:multiply" />
-            <img id="k-bfan" class="k-abs" src="assets/img/croquisB_fan.png" style="left:-140px; top:250px; width:1078px; height:1533px" />
+            <img class="k-abs" src="assets/img/croquisB_page.jpg" style="left:-310px; top:174px; width:1270.5px; height:1806.75px; mix-blend-mode:multiply" />
+            <img id="k-bfan" class="k-abs" src="assets/img/croquisB_fan.png" style="left:-310px; top:174px; width:1270.5px; height:1806.75px" />
             <div id="k-fb">
               <div id="k-fb-bleed" style="position:absolute; inset:0; filter:url(#k-bleedB)">
                 <img id="k-fb-ink" src="assets/img/flashB_ink.png" />
@@ -99,6 +107,7 @@
           <div id="k-lab2" class="k-label">FLASH — ENCRE</div>
           <div id="k-p1-turnshade"></div>
         </div>
+        <div id="k-turn"></div>
         <svg id="k-spiral" viewBox="0 0 70 1120"></svg>
       </div>
     </div>
@@ -116,19 +125,20 @@
       const stemTop = [MA[0][0] * 307 + MA[0][1] * 28 + MA[0][2], MA[1][0] * 307 + MA[1][1] * 28 + MA[1][2]];
       const trA = new K.TraceReveal($("#k-amask-g"), JINKX.flashA.polys, { width: 22 });
       trA.ease = K.ease("power2.inOut");
+      trA.grow = true;
       const byTop = trA.items.map((it, i) => [it.bbox[1], i]).sort((a, b) => a[0] - b[0]);
       const rankA = []; byTop.forEach(([, i], r) => (rankA[i] = r));
       const Lmax = Math.max(...trA.items.map((it) => it.L));
       trA.schedule((it, i) => {
-        const s = 0.6 + 0.62 * (rankA[i] / trA.items.length);
-        const d = Math.min(0.32 + 0.55 * Math.sqrt(it.L / Lmax), 1.8 - s);
+        const s = 0.6 + 0.7 * (rankA[i] / trA.items.length);
+        const d = Math.min(0.36 + 0.6 * Math.sqrt(it.L / Lmax), 2.0 - s);
         return [s, d];
       });
-      tl.fromTo("#k-amask-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.35, ease: "power2.inOut" }, 1.55);
+      tl.fromTo("#k-amask-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.35, ease: "power2.inOut" }, 1.75);
       // le bleu se désature puis s'efface sous l'encre ; les lignes du cahier pâlissent
       tl.fromTo("#k-aink", { filter: "saturate(1)", opacity: 1 }, { filter: "saturate(0)", duration: 0.7, ease: "power2.inOut" }, 0.6);
-      tl.to("#k-aink", { opacity: 0, duration: 0.7, ease: "power2.in" }, 1.1);
-      tl.fromTo("#k-apage", { opacity: 1 }, { opacity: 0.5, duration: 1.2, ease: "power2.inOut" }, 0.6);
+      tl.to("#k-aink", { opacity: 0, duration: 0.8, ease: "power2.in" }, 1.2);
+      tl.fromTo("#k-apage", { opacity: 1 }, { opacity: 0.5, duration: 1.4, ease: "power2.inOut" }, 0.6);
 
       /* ---------- micro-labels ---------- */
       const lab = ["#k-lab1", "#k-lab2", "#k-lab3", "#k-lab4"].map((s) => K.splitLetters($(s)));
@@ -139,11 +149,36 @@
       K.typeOut(tl, lab[2], 5.1, 0.016);
       K.typeIn(tl, lab[3], 5.4, 0.035);
 
-      /* ---------- tourne de page à 5,4 s (local 3,0) ---------- */
+      /* ---------- tourne de page à 5,4 s (local 3,0) : 8 bandes chaînées, recto + verso (dessin en transparence) ---------- */
+      const NSTRIP = 8, SW = 1080 / NSTRIP;
+      const flashTf = `translate(170px,190px) scale(1.35) matrix(${MA[0][0]},${MA[1][0]},${MA[0][1]},${MA[1][1]},${MA[0][2]},${MA[1][2]})`;
+      const frontHTML = `<div style="position:absolute;inset:0;transform:scale(1.06);transform-origin:540px 900px;background:#ede6da">
+          <img src="assets/img/croquisA_page.jpg" style="position:absolute;left:170px;top:190px;width:1080px;height:1663px;mix-blend-mode:multiply;opacity:0.5">
+          <img src="assets/img/flashA_ink.png" style="position:absolute;left:0;top:0;width:702px;height:1065px;transform-origin:0 0;transform:${flashTf}">
+          ${$("#k-blot").outerHTML.replace('id="k-blot"', 'style="position:absolute;left:868px;top:318px;width:60px;height:52px"')}
+        </div>
+        <div style="position:absolute;left:0;top:0;width:78px;height:100%;background:linear-gradient(90deg,rgba(18,17,16,0.16),rgba(18,17,16,0))"></div>
+        <div class="k-label" style="opacity:1">FLASH — ENCRE</div>`;
+      const ghostHTML = `<img src="assets/img/flashA_ink.png" style="position:absolute;left:0;top:0;width:702px;height:1065px;transform-origin:0 0;transform:scale(1.06) ${flashTf}">`;
+      const strips = [];
+      let parent = $("#k-turn");
+      for (let k = 0; k < NSTRIP; k++) {
+        const st = document.createElement("div");
+        st.className = "k-strip";
+        st.style.left = (k === 0 ? 0 : SW) + "px";
+        st.style.width = SW + "px";
+        const x0 = k * SW;
+        st.innerHTML = `<div class="k-face"><div class="k-clone" style="left:${-x0}px">${frontHTML}</div><div class="k-fshade"></div></div>
+          <div class="k-face k-back"><div class="k-ghost" style="left:${-(1080 - x0 - SW)}px">${ghostHTML}</div><div class="k-bshade"></div></div>`;
+        parent.appendChild(st);
+        strips.push({ el: st, fs: st.querySelector(".k-fshade"), bs: st.querySelector(".k-bshade") });
+        parent = st;
+      }
+      const turnEl = $("#k-turn");
 
       /* ---------- Page 2 : l'éventail du croquis s'ouvre, puis le flash B se déploie pétale par pétale ---------- */
-      const MB = JINKX.align.B.matrix, sB = 1.4;
-      $("#k-fb").style.transform = `matrix(${sB * MB[0][0]}, ${sB * MB[1][0]}, ${sB * MB[0][1]}, ${sB * MB[1][1]}, ${-140 + sB * MB[0][2]}, ${250 + sB * MB[1][2]})`;
+      const MB = JINKX.align.B.matrix, sB = 1.65;
+      $("#k-fb").style.transform = `matrix(${sB * MB[0][0]}, ${sB * MB[1][0]}, ${sB * MB[0][1]}, ${sB * MB[1][1]}, ${-310 + sB * MB[0][2]}, ${174 + sB * MB[1][2]})`;
       tl.fromTo("#k-bfan", { opacity: 1 }, { opacity: 0, duration: 1.3, ease: "power2.in" }, 4.3);
       tl.fromTo(["#k-tasL", "#k-tasR"], { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 5.25);
 
@@ -158,10 +193,11 @@
         return Math.min(1, (k + K.smooth(K.smooth(f))) / N);
       };
 
-      K.ticker(tl, 6.45, (t) => {
+      K.ticker(tl, 6.65, (t) => {
         const tg = T0 + t;
-        const st = { turn: K.tw(t, 3.0, 0.45, 0, 180, "power3.in"), punch: t < 3.45 ? 1 : K.tw(t, 3.45, 0.35, 1.018, 1, "power4.out") };
-        K.applyCam(cam, tg, st.punch);
+        // fin de scène : la caméra plonge dans le rivet de l'éventail (le point de départ de la dissolution)
+        const dive = t < 5.7 ? 1 : K.tw(t, 5.7, 0.95, 1, 1.7, "power2.in");
+        K.applyCam(cam, tg, dive);
         // push-in lent par page : 1.00 -> 1.06
         p1push.style.transform = `scale(${(1 + 0.06 * K.clamp(t / 3.0)).toFixed(5)})`;
         p2push.style.transform = `scale(${(1 + 0.06 * K.clamp((t - 3.0) / 3.45)).toFixed(5)})`;
@@ -172,21 +208,33 @@
         if (bA > 0.05) { ableed.setAttribute("filter", "url(#k-bleedA)"); bleedA.setAttribute("scale", bA.toFixed(2)); }
         else ableed.removeAttribute("filter");
         // brise dans les feuilles après le tracé
-        const bw = K.clamp((t - 1.7) / 0.6);
-        const ang = bw * (1.3 * Math.sin((2 * Math.PI * (t - 1.7)) / 2.4) + 0.4 * Math.sin((2 * Math.PI * (t - 1.7)) / 0.9));
+        const bw = K.clamp((t - 1.6) / 0.5);
+        const ang = bw * (2.0 * Math.sin((2 * Math.PI * (t - 1.6)) / 1.6) + 0.5 * Math.sin((2 * Math.PI * (t - 1.6)) / 0.7));
         abreeze.setAttribute("transform", `rotate(${ang.toFixed(3)} ${stemTop[0].toFixed(1)} ${stemTop[1].toFixed(1)})`);
 
-        // tourne de page : rotation 3D sur la reliure + ombre dynamique
-        const a = st.turn;
-        p1.style.transform = a > 0 ? `rotateY(${(-a).toFixed(3)}deg)` : "none";
-        p1.style.visibility = a >= 90 ? "hidden" : "visible";
-        const rad = (a * Math.PI) / 180;
-        turnShade.style.opacity = (Math.sin(rad) * 0.9).toFixed(3);
-        p2shadow.style.width = (1080 * Math.max(0, Math.cos(rad))).toFixed(1) + "px";
-        p2shadow.style.opacity = a > 0 && a < 90 ? (0.9 * Math.sin(rad * 1.6 > Math.PI ? Math.PI : rad * 1.6)).toFixed(3) : 0;
+        // tourne de page : la feuille tourne autour de la spirale et se courbe (les bandes extérieures mènent)
+        const pt = K.clamp((t - 3.0) / 0.5), A = 180 * pIO(pt), B = 38 * Math.sin(Math.PI * pt);
+        const turning = t >= 3.0 && t < 3.5;
+        p1.style.visibility = t >= 3.0 ? "hidden" : "visible";
+        turnEl.style.visibility = turning ? "visible" : "hidden";
+        if (turning) {
+          let prev = 0;
+          strips.forEach((s, k) => {
+            const phi = Math.min(180, A + B * (k / (NSTRIP - 1)));
+            s.el.style.transform = `rotateY(${(-(phi - prev)).toFixed(3)}deg)`;
+            prev = phi;
+            const r = (phi * Math.PI) / 180;
+            s.fs.style.opacity = (0.32 * Math.sin(r) + 0.1 * K.clamp(phi / 90)).toFixed(3);
+            s.bs.style.opacity = (0.28 * Math.sin(r)).toFixed(3);
+          });
+        }
+        // ombre dynamique sur la page du dessous : suit le bord libre, s'étire puis se rétracte
+        const edge = 1080 * Math.max(0, Math.cos((Math.min(180, A + B) * Math.PI) / 180));
+        p2shadow.style.width = (edge + 160 * Math.sin(Math.PI * pt)).toFixed(1) + "px";
+        p2shadow.style.opacity = turning ? (0.85 * Math.sin(Math.PI * Math.min(1, pt * 1.15))).toFixed(3) : 0;
 
         // l'éventail du croquis s'ouvre depuis le rivet (local 3,45 -> 4,05)
-        const fo = 141 * pIO(K.clamp((t - 3.45) / 0.6));
+        const fo = 141 * pIO(K.clamp((t - 3.5) / 0.6));
         bfan.style.setProperty("--fo", fo.toFixed(2));
         // flash B : balayage angulaire pétale par pétale (local 4,2 -> 5,4), puis révélation complète
         const pf = petals(pIO(K.clamp((t - 4.2) / 1.2)));

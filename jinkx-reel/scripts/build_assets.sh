@@ -5,7 +5,8 @@ cd "$(dirname "$0")/.."
 python3 -I scripts/prep_images.py          # détourage, redressement, calques
 python3 -I scripts/align.py                # alignement croquis -> flash (A et B)
 node scripts/trace.mjs                     # vectorisation potrace -> polylignes de masque
-python3 -I scripts/signature.py            # tracé monoline de « Jinkx »
+python3 -I scripts/signature.py            # tracé monoline (V1)
+python3 -I scripts/wordmark.py             # V2 : wordmark à pleins et déliés + chemin central
 for n in align signature; do
   echo "window.JINKX=window.JINKX||{};window.JINKX['$n']=$(cat assets/data/$n.json);" > assets/data/$n.js
 done

@@ -243,7 +243,21 @@ cv2.fillPoly(poly_mask, [fan_poly], 255)
 fan_draw = cv2.bitwise_and(cv2.dilate(drawing, np.ones((5, 5), np.uint8)), poly_mask)
 fan_soft = cv2.GaussianBlur(cv2.bitwise_and(cv2.dilate(dark, np.ones((3, 3), np.uint8)), poly_mask), (0, 0), 1.2)
 grayB = cv2.cvtColor(ff.astype(np.uint8), cv2.COLOR_BGR2GRAY).astype(np.float32)
-base = rebuild_ruling(grayB, cv2.dilate(poly_mask, np.ones((9, 9), np.uint8)), dark)
+# zone de l'éventail : on recopie le profil réel des lignes (colonnes propres à gauche et à droite), avec leur pente
+fillB = cv2.dilate(poly_mask, np.ones((9, 9), np.uint8))
+xL0, xL1, xR0, xR1 = 336, 372, 760, 769
+pL = np.median(grayB[:, xL0:xL1], axis=1); pR = np.median(grayB[:, xR0:xR1], axis=1)
+best = (1e18, 0.0)
+for dd in np.arange(-8, 8.01, 0.25):
+    yy_ = np.arange(100, 1000)
+    err = np.abs(np.interp(yy_ + dd, np.arange(len(pR)), pR) - pL[yy_]).sum()
+    if err < best[0]: best = (err, dd)
+slope = best[1] / ((xR0 + xR1) / 2 - (xL0 + xL1) / 2)
+print('croquisB ruling slope', slope)
+ys_, xs_ = np.where(fillB > 0)
+xm = (xL0 + xL1) / 2
+grayB[ys_, xs_] = np.interp(ys_ + slope * (xs_ - xm), np.arange(len(pL)), pL)
+base = grayB
 base = np.clip((base - 35) / (240 - 35) * 255, 0, 255)
 hh, ww = base.shape[:2]
 yy, xx = np.mgrid[0:hh, 0:ww].astype(np.float32)
@@ -302,6 +316,18 @@ cv2.imwrite(f"{TMP}/peau1_bw.png", 255 - lines_only)
 import json
 json.dump({"size": [ww, hh], "dots": dots}, open(f"{TMP}/peau1_dots.json", "w"))
 print("peau1 size", (ww, hh), "dots", len(dots))
+# V2 : silhouette seule (traits gris nets, sans les traces de l'inpainting), pour un tracé propre
+gb = g / 255.0
+sil = smoothstep(0.93, 0.62, gb) * (1 - cv2.dilate(tat_d, np.ones((7, 7), np.uint8)).astype(np.float32) / 255)
+sil = cv2.morphologyEx((sil * 255).astype(np.uint8), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8)).astype(np.float32) / 255
+n_cc, lab, stats, _ = cv2.connectedComponentsWithStats((sil > 0.3).astype(np.uint8))
+keep_s = np.zeros(sil.shape, bool)
+for i in range(1, n_cc):
+    if stats[i][4] >= 40:
+        keep_s |= lab == i
+sil = sil * cv2.dilate(keep_s.astype(np.uint8), np.ones((3, 3), np.uint8))
+save_rgba(f"{OUT}/peau1_sil.png", ink_layer(sil), np.clip(sil * 1.15, 0, 1))
+cv2.imwrite(f"{TMP}/peau1sil_bw.png", ((sil < 0.35) * 255).astype(np.uint8))
 
 # ---------------------------------------------------------------- Peau 2 (pied néo-tribal) : redressement + tirage
 img = cv2.imread(f"{SRC}/07_neotribal_pied_mockup.jpg")
@@ -316,6 +342,7 @@ dark = (g < 70).astype(np.uint8)
 dark[430:, 341:347] = 0
 ncc, labs, sts, _ = cv2.connectedComponentsWithStats(dark, connectivity=4)
 Hh, Ww = g.shape
+yy, xx = np.mgrid[0:Hh, 0:Ww]
 tm = np.zeros_like(dark)
 for i in range(1, ncc):
     x, y, w_, h_, area = sts[i]
@@ -323,7 +350,21 @@ for i in range(1, ncc):
         continue
     tm[labs == i] = 1
 yy, xx = np.mgrid[0:Hh, 0:Ww]
+skin0 = (g > 92).astype(np.uint8) * 255
+region = cv2.morphologyEx(skin0, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (71, 71)))
+region = cv2.erode(region, np.ones((5, 5), np.uint8))
+gap = (xx < 344) & (yy > 430)
+tm = (tm > 0) | ((g < 70) & (region > 0) & ~gap)
 tm = tm.astype(np.uint8) * 255
+# ne garde que les formes pleines du tribal (pas les contours fins de la jambe)
+dt = cv2.distanceTransform(tm, cv2.DIST_L2, 5)
+ncc4, lab4, st4, _ = cv2.connectedComponentsWithStats(tm)
+clean = np.zeros_like(tm)
+for i in range(1, ncc4):
+    m = lab4 == i
+    if st4[i][4] > 300 and dt[m].max() > 5:
+        clean[m] = 255
+tm = clean
 tm = cv2.morphologyEx(tm, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
 tmd = cv2.dilate(tm, np.ones((7, 7), np.uint8))
 soft = np.clip((165 - g.astype(np.float32)) / 120, 0, 1) * (cv2.GaussianBlur(tmd, (0, 0), 1.2) / 255.0)
@@ -335,5 +376,24 @@ cnts, _ = cv2.findContours(tm, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 stencil = base.copy()
 cv2.drawContours(stencil, cnts, -1, (40, 40, 40), 2, cv2.LINE_AA)
 base = cv2.addWeighted(base, 0.45, stencil, 0.55, 0)
+# V2 : jambe et pied détourés, posés sur un fond encre uni (plus de damier)
+skin = (g > 92).astype(np.uint8) * 255
+skin = cv2.morphologyEx(skin, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
+ncc2, lab2, st2, _ = cv2.connectedComponentsWithStats(skin)
+leg = np.zeros_like(skin)
+for i in range(1, ncc2):
+    if st2[i][4] > 20000:
+        leg[lab2 == i] = 255
+leg = cv2.bitwise_or(leg, tmd)
+# bouche les petits trous (ongles, ombres) sans combler l'espace entre les jambes
+inv = cv2.bitwise_not(leg)
+ncc3, lab3, st3, _ = cv2.connectedComponentsWithStats(inv)
+for i in range(1, ncc3):
+    if st3[i][4] < 6000:
+        leg[lab3 == i] = 255
+leg = cv2.morphologyEx(leg, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+legf = cv2.GaussianBlur(leg, (0, 0), 1.2).astype(np.float32)[..., None] / 255
+inkbg = np.zeros_like(base, np.float32); inkbg[:] = (0x10, 0x11, 0x12)
+base = (base.astype(np.float32) * legf + inkbg * (1 - legf)).astype(np.uint8)
 cv2.imwrite(f"{OUT}/peau2_base.jpg", base, [cv2.IMWRITE_JPEG_QUALITY, 92])
 print("peau2 size", (Ww, Hh))

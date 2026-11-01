@@ -6,7 +6,7 @@
     "assets": "scripts/build_assets.sh",
     "check": "hyperframes check",
     "preview": "hyperframes preview",
-    "render": "hyperframes render -o out/jinkx-reel_22s_silent.mp4 -q delivery -f 30",
+    "render": "hyperframes render -o out/jinkx-reel_v2_22s_silent.mp4 -q delivery -f 30",
     "cover": "node scripts/cover.cjs"
   },
   "dependencies": {

@@ -94,10 +94,12 @@
         if (p <= 0) {
           if (it.state !== 0) { it.el.style.visibility = 'hidden'; it.state = 0; }
         } else if (p >= 1) {
-          if (it.state !== 2) { it.el.style.visibility = 'visible'; it.el.removeAttribute('stroke-dasharray'); it.state = 2; }
+          if (it.state !== 2) { it.el.style.visibility = 'visible'; it.el.removeAttribute('stroke-dasharray'); it.el.setAttribute('stroke-width', this.width); it.state = 2; }
         } else {
           const a = (p * it.L) / 2;
           it.el.style.visibility = 'visible';
+          // départ en pointe : le trait de masque s'épaissit au début (pas de « point » parasite)
+          if (this.grow) it.el.setAttribute('stroke-width', (this.width * Math.min(1, 0.15 + p / 0.18)).toFixed(2));
           it.el.setAttribute('stroke-dasharray', `${a.toFixed(2)} ${(it.L - 2 * a).toFixed(2)} ${a.toFixed(2)} ${it.L.toFixed(2)}`);
           it.state = 1;
         }
