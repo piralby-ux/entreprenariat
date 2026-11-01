@@ -2,3 +2,4 @@ node_modules/
 .hyperframes/
 prep/
 out/render.log
+out/.*
