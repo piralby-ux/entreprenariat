@@ -1,5 +1,6 @@
 <template>
   <style>
+    @font-face { font-family: "IM Fell English SC"; font-style: normal; font-weight: 400; src: url("assets/fonts/IMFellEnglishSC-Regular.ttf"); }
     #root { position: absolute; inset: 0; overflow: hidden; }
     #p-bg { position: absolute; inset: 0; background: #ede6da; opacity: 0; }
     #p-world { position: absolute; inset: 0; }
@@ -7,15 +8,17 @@
     #p-slide { position: absolute; inset: 0; }
     #p-push { position: absolute; inset: 0; transform-origin: 540px 900px; }
     .p-abs { position: absolute; display: block; }
-    #p-label { position: absolute; left: 92px; top: 286px; font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 28px;
-      letter-spacing: 0.12em; color: rgba(18, 17, 16, 0.75); white-space: pre; }
+    #p-label { position: absolute; left: 92px; top: 284px; font-family: "IM Fell English SC", serif; font-weight: 400; font-size: 31px;
+      letter-spacing: 0.18em; color: rgba(18, 17, 16, 0.8); white-space: pre; filter: url(#ink-press); }
     #p-print { position: absolute; left: 162px; top: 2330px; width: 756px; height: 1096px; padding: 24px; background: #f7f3ec;
       box-shadow: 0 30px 54px rgba(18,17,16,0.30), 0 5px 12px rgba(18,17,16,0.22); transform-origin: 50% 50%; }
     #p-photo { position: relative; width: 708px; height: 1048px; overflow: hidden; background: #121110; }
     #p-photo img { position: absolute; left: 0; top: 0; width: 708px; height: 1048px; }
     #p-tribal { -webkit-mask-image: linear-gradient(to bottom, #000 calc(var(--fill, 0) * 1%), transparent calc(var(--fill, 0) * 1% + 7%));
       mask-image: linear-gradient(to bottom, #000 calc(var(--fill, 0) * 1%), transparent calc(var(--fill, 0) * 1% + 7%)); }
-    #p-sheen { position: absolute; inset: 24px; background: linear-gradient(125deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.08) 52%, rgba(255,255,255,0) 64%); }
+    #p-gloss { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.32) 48%, rgba(255,255,255,0.05) 54%, rgba(255,255,255,0) 62%);
+      background-size: 300% 100%; background-repeat: no-repeat; mix-blend-mode: screen; }
+    #p-machine { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
   </style>
   <div id="root" data-composition-id="peau" data-width="1080" data-height="1920">
     <div id="p-bg"></div>
@@ -23,7 +26,6 @@
       <div id="p-cam">
         <div id="p-slide">
           <div id="p-push">
-            <!-- Peau 1 : silhouette d'épaule et de bras (gris crayon net), puis le tatouage ornemental -->
             <svg class="p-abs" width="1080" height="1920" viewBox="0 0 1080 1920" style="left:0; top:0; overflow:visible">
               <defs>
                 <mask id="p-smask" maskUnits="userSpaceOnUse" x="-50" y="-50" width="900" height="1300">
@@ -35,26 +37,95 @@
                   <g id="p-dots"></g>
                   <rect id="p-mask-full" x="-50" y="-50" width="900" height="1300" fill="#fff" opacity="0" />
                 </mask>
+                <!-- stencil de transfert violet (papier carbone thermique) : trait un peu baveux -->
+                <filter id="p-violet" x="-5%" y="-5%" width="110%" height="110%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="1.6" result="b" />
+                  <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="5" result="n" />
+                  <feDisplacementMap in="b" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G" result="d" />
+                  <feFlood flood-color="#6B4FA0" />
+                  <feComposite in2="d" operator="in" />
+                </filter>
+                <!-- halo rosé du trait frais -->
+                <filter id="p-halo" x="-10%" y="-10%" width="120%" height="120%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="b" />
+                  <feFlood flood-color="#C98B84" />
+                  <feComposite in2="b" operator="in" />
+                </filter>
+                <!-- essuyage : geste doux de papier absorbant en diagonale -->
+                <linearGradient id="p-wipe-g" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#000" /><stop offset="0.42" stop-color="#000" /><stop offset="0.58" stop-color="#fff" /><stop offset="1" stop-color="#fff" />
+                </linearGradient>
+                <mask id="p-wipe" maskUnits="userSpaceOnUse" x="-400" y="-400" width="1700" height="2000">
+                  <rect id="p-wipe-r" x="-2400" y="-2800" width="3000" height="3400" fill="url(#p-wipe-g)" />
+                </mask>
                 <filter id="p-bleed" x="-5%" y="-5%" width="110%" height="110%">
                   <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="13" result="n" />
-                  <feDisplacementMap id="p-bleed-d" in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G" />
+                  <feDisplacementMap id="p-bleed-d" in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" />
                 </filter>
               </defs>
               <g transform="translate(33 300) scale(1.25)">
                 <image href="assets/img/peau1_sil.png" width="790" height="1170" mask="url(#p-smask)" opacity="0.62" />
+                <g mask="url(#p-wipe)"><image id="p-stencil" href="assets/img/peau1_tattoo.png" width="790" height="1170" filter="url(#p-violet)" opacity="0" /></g>
+                <image id="p-halo-i" href="assets/img/peau1_tattoo.png" width="790" height="1170" filter="url(#p-halo)" mask="url(#p-mask)" opacity="0" />
                 <g id="p-tat-g" filter="url(#p-bleed)">
-                  <image href="assets/img/peau1_tattoo.png" width="790" height="1170" mask="url(#p-mask)" />
+                  <image id="p-tat" href="assets/img/peau1_tattoo.png" width="790" height="1170" mask="url(#p-mask)" />
                 </g>
               </g>
             </svg>
+          <svg id="p-machine" viewBox="0 0 1080 1920">
+            <defs>
+              <filter id="p-shadow-f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" /></filter>
+              <linearGradient id="p-matte" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2a2826" /><stop offset="0.22" stop-color="#48443f" /><stop offset="0.34" stop-color="#1f1d1b" /><stop offset="0.75" stop-color="#121110" /><stop offset="1" stop-color="#0b0a0a" />
+              </linearGradient>
+              <linearGradient id="p-metal" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#8f8a82" /><stop offset="0.25" stop-color="#e3ded5" /><stop offset="0.5" stop-color="#9c978f" /><stop offset="1" stop-color="#4c4945" />
+              </linearGradient>
+              <linearGradient id="p-cart" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#5a5650" stop-opacity="0.9" /><stop offset="0.3" stop-color="#b8b2a8" stop-opacity="0.75" /><stop offset="1" stop-color="#2e2c29" stop-opacity="0.9" />
+              </linearGradient>
+              <g id="p-silhouette">
+                <path d="M0 0 L14 -3 L60 -10 L60 -12 L110 -12 L110 -23 L250 -23 L250 -25 L262 -25 L262 -27 L520 -27 L520 -20 L545 -20 L545 -9 L600 -9 L600 9 L545 9 L545 20 L520 20 L520 27 L262 27 L262 25 L250 25 L250 23 L110 23 L110 12 L60 12 L60 10 L14 3 Z" />
+                <path d="M600 0 C 690 0, 760 -70, 860 -200 S 1000 -420, 1080 -520" fill="none" stroke-width="11" />
+              </g>
+            </defs>
+            <g id="p-mshadow" opacity="0.3" filter="url(#p-shadow-f)" fill="#121110" stroke="#121110"><use href="#p-silhouette" /></g>
+            <g id="p-mbody">
+              <!-- câble RCA qui sort par le haut du cadre -->
+              <path d="M600 0 C 690 0, 760 -70, 860 -200 S 1000 -420, 1080 -520" fill="none" stroke="#151413" stroke-width="10" stroke-linecap="round" />
+              <path d="M600 -3 C 690 -3, 758 -73, 857 -202" fill="none" stroke="#d9cfbf" stroke-width="1.4" opacity="0.18" />
+              <rect x="545" y="-9" width="56" height="18" rx="3" fill="url(#p-matte)" />
+              <rect x="560" y="-9.5" width="5" height="19" fill="url(#p-metal)" />
+              <!-- aiguille + bec métallique -->
+              <line x1="0" y1="0" x2="20" y2="0" stroke="#8d887f" stroke-width="1.7" stroke-linecap="round" />
+              <path d="M14 -3 L60 -10 L60 10 L14 3 Z" fill="url(#p-metal)" />
+              <!-- cartouche translucide -->
+              <rect x="60" y="-12" width="52" height="24" rx="3" fill="url(#p-cart)" />
+              <!-- grip strié -->
+              <rect x="110" y="-23" width="142" height="46" rx="8" fill="url(#p-matte)" />
+              <g id="p-knurl" stroke="#3b3835" stroke-width="2"></g>
+              <!-- bague métallique -->
+              <rect x="250" y="-25" width="13" height="50" rx="2" fill="url(#p-metal)" />
+              <!-- corps cylindrique -->
+              <rect x="262" y="-27" width="260" height="54" rx="10" fill="url(#p-matte)" />
+              <!-- bague de réglage (moletée) -->
+              <rect x="462" y="-28.5" width="30" height="57" rx="4" fill="#1d1c1a" />
+              <g id="p-knurl2" stroke="#3a3734" stroke-width="1.6"></g>
+              <rect x="520" y="-20" width="26" height="40" rx="6" fill="url(#p-matte)" />
+              <!-- reflet spéculaire fin -->
+              <line x1="275" y1="-15" x2="455" y2="-15" stroke="#f2ece2" stroke-width="2.2" opacity="0.32" stroke-linecap="round" />
+              <line x1="120" y1="-12" x2="240" y2="-12" stroke="#f2ece2" stroke-width="1.4" opacity="0.2" stroke-linecap="round" />
+              <rect x="100" y="-12" width="4" height="24" fill="#c2381f" />
+            </g>
+          </svg>
           </div>
           <!-- Peau 2 : tirage photo du pied, seul dans le cadre (on y glisse en caméra) -->
           <div id="p-print">
             <div id="p-photo">
               <img src="assets/img/peau2_base.jpg" />
               <img id="p-tribal" src="assets/img/peau2_tribal.png" />
+              <div id="p-gloss"></div>
             </div>
-            <div id="p-sheen"></div>
           </div>
         </div>
         <div id="p-label">SUR PEAU</div>
@@ -66,7 +137,13 @@
       const K = InkKit, $ = (s) => document.querySelector(s);
       const T0 = 13.2;
       const tl = gsap.timeline({ paused: true });
+      K.ensurePressFilter();
       const OX = 33, OY = 300, SC = 1.25;
+      const toScreen = (p) => [OX + SC * p[0], OY + SC * p[1]];
+      let kn = "", kn2 = "";
+      for (let x = 118; x < 248; x += 6) kn += `<line x1="${x}" y1="-21" x2="${x}" y2="21"/>`;
+      for (let x = 465; x < 491; x += 4) kn2 += `<line x1="${x}" y1="-26" x2="${x}" y2="26"/>`;
+      $("#p-knurl").innerHTML = kn; $("#p-knurl2").innerHTML = kn2;
 
       /* 13,2 : match cut de forme — la silhouette du bras se trace depuis l'endroit où coulent les herbes du vase */
       const HERB = [(525 - OX) / SC, (1400 - OY) / SC];
@@ -76,15 +153,24 @@
       sd.forEach(([, i], r) => { const it = sil.items[i]; it.start = 0.05 + 0.5 * (r / sd.length); it.dur = Math.min(0.95 - it.start, 0.25 + 0.0018 * it.L); });
       tl.fromTo("#p-smask-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.25 }, 0.85);
 
-      /* tracé du tatouage ornemental (14,0 -> 15,0) */
+      /* 14,0 : le stencil violet est posé ; 14,3 -> 15,2 : la machine repasse les lignes, le violet devient noir */
+      tl.fromTo("#p-stencil", { attr: { opacity: 0 } }, { attr: { opacity: 0.7 }, duration: 0.25, ease: "power2.out" }, 0.8);
       const tr = new K.TraceReveal($("#p-mask-g"), JINKX.peau1.polys, { width: 15 });
       tr.ease = K.ease("power2.inOut");
       tr.grow = true;
       const order = tr.items.map((it, i) => [it.bbox[1], i]).sort((a, b) => a[0] - b[0]);
-      order.forEach(([, i], r) => { const it = tr.items[i]; it.start = 0.8 + 0.4 * (r / order.length); it.dur = Math.min(1.8 - it.start, 0.45 + 0.004 * it.L); });
-      tl.fromTo("#p-mask-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.3 }, 2.35);
+      // traits successifs : la machine en suit un à la fois
+      let acc = 1.1;
+      const totalL = tr.items.reduce((a, it) => a + it.L, 0);
+      order.forEach(([, i]) => { const it = tr.items[i]; it.start = acc; it.dur = Math.max(0.12, 0.88 * (it.L / totalL)); acc += it.dur * 0.92; });
+      tl.fromTo("#p-mask-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.25 }, 2.15);
+      // halo rosé du trait frais, qui s'éteint en 0,8 s
+      tl.fromTo("#p-halo-i", { attr: { opacity: 0 } }, { attr: { opacity: 0.12 }, duration: 0.2 }, 1.1);
+      tl.to("#p-halo-i", { attr: { opacity: 0 }, duration: 0.8, ease: "power1.in" }, 2.05);
+      // léger gain de contraste après l'essuyage
+      tl.fromTo("#p-tat", { attr: { opacity: 0.88 } }, { attr: { opacity: 1 }, duration: 0.3 }, 2.1);
 
-      /* les petits points tombent sur la grille (double-croches à 100 BPM), 15,0 -> 15,45 */
+      /* les petits points : la machine les « tape » sur la grille (double-croches à 100 BPM) */
       const dots = JINKX.peau1dots.dots.slice().sort((a, b) => a[1] - b[1]);
       const clusters = [];
       for (const d of dots) {
@@ -93,53 +179,74 @@
       }
       const dg = $("#p-dots"), dotEls = [];
       clusters.forEach((c, ci) => {
-        const at = 1.8 + 0.15 * Math.floor((ci * 4) / clusters.length);
+        const at = 1.95 + 0.15 * Math.floor((ci * 3) / clusters.length);
         c.dots.forEach((d, di) => {
           const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
           el.setAttribute("cx", d[0]); el.setAttribute("cy", d[1]); el.setAttribute("r", 0); el.setAttribute("fill", "#fff");
           dg.appendChild(el);
-          dotEls.push({ el, r: d[2] + 3, at: at + di * 0.04 });
+          dotEls.push({ el, r: d[2] + 3, at: at + di * 0.03 });
         });
       });
 
-      K.typeIn(tl, K.splitLetters($("#p-label")), 0.65, 0.04);
+      K.pressIn(tl, K.splitLetters($("#p-label")), 0.65);
 
-      // point où la plume commence « Jinkx » dans la scène suivante (repère page = écran)
-      const WM = JINKX.wordmark, s0 = WM.strokes[0].d.slice(1).split(" L")[0].split(" ").map(Number);
-      const C = [WM.x0 + s0[0], WM.y0 + s0[1]];
-
+      /* trajectoire de la machine sur le tatouage */
+      const F0 = 1.1, F1 = 2.0;
+      const NP = K.needlePath(tr, F0, F1, toScreen, [400, 400]);
+      const ANG = -55;
       const world = $("#p-world"), bg = $("#p-bg"), cam = $("#p-cam"), slide = $("#p-slide"), push = $("#p-push");
-      const print = $("#p-print"), tribal = $("#p-tribal"), bleed = $("#p-bleed-d"), tatG = $("#p-tat-g"), label = $("#p-label");
+      const print = $("#p-print"), tribal = $("#p-tribal"), gloss = $("#p-gloss"), bleed = $("#p-bleed-d"), tatG = $("#p-tat-g"), label = $("#p-label");
+      const mbody = $("#p-mbody"), mshadow = $("#p-mshadow"), wipeR = $("#p-wipe-r");
       const p4o = K.ease("power4.out");
 
       K.ticker(tl, 4.8, (t) => {
         const tg = T0 + t;
-        // fond papier dès que le vase s'est effacé (les herbes passent la main au bras)
         bg.style.opacity = K.tw(t, 0.45, 0.2, 0, 1).toFixed(3);
-        // 17,4 -> 18,0 : l'encre se rétracte en douceur vers le point de départ de la plume
-        if (t >= 4.2) {
-          const R = K.tw(t, 4.2, 0.6, 1700, 0, "power2.in");
-          const m = `radial-gradient(circle at ${C[0].toFixed(0)}px ${C[1].toFixed(0)}px, #000 ${Math.max(0, R - 170).toFixed(0)}px, transparent ${R.toFixed(0)}px)`;
-          world.style.webkitMaskImage = m; world.style.maskImage = m;
-        } else { world.style.webkitMaskImage = "none"; world.style.maskImage = "none"; }
-        const z = t < 4.2 ? 1 : K.tw(t, 4.2, 0.6, 1, 0.7, "power2.in");
-        cam.style.transformOrigin = `${C[0].toFixed(0)}px ${C[1].toFixed(0)}px`;
-        K.applyCam(cam, tg, z);
+        K.applyCam(cam, tg, 1);
         push.style.transform = `scale(${(1 + 0.05 * K.clamp(t / 2.4)).toFixed(5)})`;
         // 15,6 : la caméra glisse vers le bas, le tirage arrive seul
         const k = K.tw(t, 2.4, 0.6, 0, 1, "expo.inOut");
         slide.style.transform = `translateY(${(-1920 * k).toFixed(1)}px)`;
         label.style.opacity = (1 - k).toFixed(3);
         const settle = K.tw(t, 2.55, 0.75, 0, 1, "power4.out");
-        print.style.transform = `rotate(${(-3 - 5 * (1 - settle)).toFixed(3)}deg) scale(${(1.04 - 0.04 * settle).toFixed(4)})`;
+        // une fois le tribal rempli : push-in lent, puis le tirage sort du cadre pendant que la plume commence à écrire
+        const pin = K.tw(t, 3.85, 0.55, 1, 1.04, "power1.inOut");
+        const out = K.tw(t, 4.3, 0.48, 0, 1, "power3.in");
+        print.style.transform = `translate(${(60 * out).toFixed(1)}px, ${(1500 * out).toFixed(1)}px) rotate(${(-3 - 5 * (1 - settle) + 6 * out).toFixed(3)}deg) scale(${((1.04 - 0.04 * settle) * pin).toFixed(4)})`;
+        // reflet de lumière qui balaie une fois le papier photo brillant
+        gloss.style.backgroundPosition = `${K.tw(t, 3.85, 0.5, 100, 0, "power1.inOut").toFixed(1)}% 0`;
 
         sil.render(t);
         tr.render(t);
-        for (const d of dotEls) d.el.setAttribute("r", (d.r * p4o(K.clamp((t - d.at) / 0.12))).toFixed(2));
-        const b = 6 * (1 - K.clamp((t - 0.8) / 1.5));
+        for (const d of dotEls) d.el.setAttribute("r", (d.r * p4o(K.clamp((t - d.at) / 0.1))).toFixed(2));
+        const b = 4 * (1 - K.clamp((t - 1.1) / 1.2));
         if (b > 0.05) { tatG.setAttribute("filter", "url(#p-bleed)"); bleed.setAttribute("scale", b.toFixed(2)); } else tatG.removeAttribute("filter");
-        // le tribal se remplit d'encre de haut en bas (16,1 -> 17,2)
-        tribal.style.setProperty("--fill", K.tw(t, 2.9, 1.1, -8, 101, "power2.inOut").toFixed(2));
+        // essuyage diagonal (15,25 -> 15,55) : efface les derniers résidus violets
+        const w = K.tw(t, 2.05, 0.32, 0, 1, "power1.inOut");
+        wipeR.setAttribute("x", (-2400 + 3400 * w).toFixed(1)); wipeR.setAttribute("y", (-2800 + 4200 * w).toFixed(1));
+        // le tribal se remplit d'encre de haut en bas (16,1 -> 17,0)
+        tribal.style.setProperty("--fill", K.tw(t, 2.9, 1.0, -8, 101, "power2.inOut").toFixed(2));
+
+        // la machine (même modèle qu'au vase) : entre, repasse le stencil, tape les points, ressort
+        let tip, lf = 0;
+        const start = NP.traj[0], end = NP.traj[NP.N], off = [1250, 520];
+        if (t < F0) { const kk = K.tw(t, 0.9, F0 - 0.9, 0, 1, "power4.out"); tip = [off[0] + (start[0] - off[0]) * kk, off[1] + (start[1] - off[1]) * kk]; lf = 1 - kk; }
+        else if (t <= F1) { tip = NP.pos(t); lf = NP.lift(t); }
+        else if (t < 2.3) {
+          // tapotements sur les grappes de points
+          const ci = Math.min(clusters.length - 1, Math.floor(((t - 1.95) / 0.15) * (clusters.length / 3)));
+          const c = clusters[Math.max(0, ci)], tgt = toScreen([c.x, c.y]);
+          const kk = K.tw(t, F1, 0.08, 0, 1, "power2.out");
+          tip = [end[0] + (tgt[0] - end[0]) * kk, end[1] + (tgt[1] - end[1]) * kk];
+          lf = 0.5 + 0.5 * Math.sin(t * 60);
+        } else { const kk = K.tw(t, 2.3, 0.3, 0, 1, "power3.in"); const c = clusters[clusters.length - 1], s0 = toScreen([c.x, c.y]); tip = [s0[0] + (1350 - s0[0]) * kk, s0[1] + (300 - s0[1]) * kk]; lf = 1; }
+        const fr = Math.round(tg * 30);
+        const on = t >= F0 && t <= F1 && lf < 0.05;
+        const jx = on ? K.hash(fr * 5 + 1) * 2 - 1 : 0, jy = on ? K.hash(fr * 5 + 2) * 2 - 1 : 0;
+        const vis = t > 0.9 && t < 2.62;
+        mbody.style.visibility = vis ? "visible" : "hidden"; mshadow.style.visibility = vis ? "visible" : "hidden";
+        mbody.setAttribute("transform", `translate(${(tip[0] + jx).toFixed(2)} ${(tip[1] + jy - 6 * lf).toFixed(2)}) rotate(${ANG}) scale(${(1 + 0.012 * lf).toFixed(4)})`);
+        mshadow.setAttribute("transform", `translate(${(tip[0] + 5 + 12 * lf).toFixed(2)} ${(tip[1] + 6 + 14 * lf).toFixed(2)}) rotate(${ANG + 3})`);
       });
       window.__timelines["peau"] = tl;
     })();

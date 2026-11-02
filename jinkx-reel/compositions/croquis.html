@@ -1,38 +1,50 @@
 <template>
   <style>
-    #root { position: absolute; inset: 0; overflow: hidden; background: #ede6da; }
+    @font-face { font-family: "IM Fell English SC"; font-style: normal; font-weight: 400; src: url("assets/fonts/IMFellEnglishSC-Regular.ttf"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: #e4dccf; }
     #k-cam { position: absolute; inset: 0; transform-origin: 410px 957px; }
-    #k-book { position: absolute; inset: 0; perspective: 1800px; perspective-origin: 540px 960px; }
+    #k-zoom { position: absolute; inset: 0; transform-origin: 540px 960px; }
+    #k-book { position: absolute; inset: 0; perspective: 1600px; perspective-origin: 540px 960px; }
     .k-page { position: absolute; inset: 0; background: #ede6da; overflow: hidden; }
+    #k-p2 { box-shadow: 0 30px 60px rgba(18,17,16,0.28), 0 6px 14px rgba(18,17,16,0.2); }
+    #k-left { position: absolute; left: -1080px; top: 0; width: 1080px; height: 1920px; background: #d9cfbf; box-shadow: 0 30px 60px rgba(18,17,16,0.25); }
+    #k-left-shade { position: absolute; inset: 0; background: linear-gradient(270deg, rgba(18,17,16,0.28), rgba(18,17,16,0) 30%); }
     .k-push { position: absolute; inset: 0; background: #ede6da; transform-origin: 540px 900px; }
     .k-abs { position: absolute; display: block; }
-    #k-p1 { transform-origin: 0 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
     .k-gutter { position: absolute; left: 0; top: 0; width: 78px; height: 100%; background: linear-gradient(90deg, rgba(18,17,16,0.16), rgba(18,17,16,0)); }
-    #k-p1-turnshade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(18,17,16,0.05), rgba(18,17,16,0.45)); opacity: 0; }
-    #k-p2-shadow { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: linear-gradient(90deg, rgba(18,17,16,0.5), rgba(18,17,16,0.12) 75%, rgba(18,17,16,0)); opacity: 0; }
+    #k-p2-shadow { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: linear-gradient(90deg, rgba(18,17,16,0.55), rgba(18,17,16,0.15) 75%, rgba(18,17,16,0)); opacity: 0; }
     #k-spiral { position: absolute; left: -57.4px; top: 15px; width: 118.1px; height: 1890px; overflow: visible; }
-    .k-label { position: absolute; left: 92px; top: 286px; font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 28px;
-      letter-spacing: 0.12em; color: rgba(18, 17, 16, 0.75); white-space: pre; }
+    /* micro-labels : IM Fell English SC, imprimés au tampon */
+    .k-label { position: absolute; left: 92px; top: 284px; font-family: "IM Fell English SC", serif; font-weight: 400; font-size: 31px;
+      letter-spacing: 0.18em; color: rgba(18, 17, 16, 0.8); white-space: pre; filter: url(#ink-press); }
+    #k-blot { position: absolute; left: 868px; top: 318px; width: 60px; height: 52px; }
+    #k-eraser-deco { position: absolute; left: 96px; top: 1560px; width: 190px; height: 90px; }
     /* tourne de page : bandes verticales chaînées en 3D (feuille souple) */
     #k-turn { position: absolute; inset: 0; transform-style: preserve-3d; visibility: hidden; }
     .k-strip { position: absolute; top: 0; height: 1920px; transform-origin: 0 50%; transform-style: preserve-3d; }
     .k-face { position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-    .k-back { transform: rotateY(180deg); background: #e0d7c8; }
+    .k-back { transform: rotateY(180deg); background: #d6ccbb; }
     .k-fshade, .k-bshade { position: absolute; inset: 0; background: #121110; opacity: 0; }
+    .k-sheen { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,252,246,0) 0%, rgba(255,252,246,0.85) 50%, rgba(255,252,246,0) 100%); opacity: 0; }
     .k-clone { position: absolute; top: 0; width: 1080px; height: 1920px; background: #ede6da; }
     .k-ghost { position: absolute; top: 0; width: 1080px; height: 1920px; transform: scaleX(-1); opacity: 0.08; }
-    #k-blot { position: absolute; left: 868px; top: 318px; width: 60px; height: 52px; }
-    #k-eraser { position: absolute; left: 96px; top: 1560px; width: 190px; height: 90px; }
     /* éventail du croquis : s'ouvre par un masque radial depuis le rivet */
     #k-bfan { -webkit-mask-image: conic-gradient(from 343deg at 726px 780px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg));
       mask-image: conic-gradient(from 343deg at 726px 780px, #000 0deg, #000 calc(var(--fo, 0) * 1deg), transparent calc(var(--fo, 0) * 1deg + 0.6deg)); }
-    #k-fb { position: absolute; left: 0; top: 0; width: 692px; height: 785px; transform-origin: 0 0; }
+    /* papier calque */
+    #k-calque { position: absolute; inset: 0; transform-origin: 540px 300px; }
+    #k-sheet-shadow { position: absolute; inset: 0; overflow: visible; }
+    #k-sheet { position: absolute; background: rgba(250, 247, 241, 0.55); -webkit-backdrop-filter: blur(2.6px) saturate(0.6); backdrop-filter: blur(2.6px) saturate(0.6); }
+    .k-fb { position: absolute; left: 0; top: 0; width: 692px; height: 785px; transform-origin: 0 0; }
     #k-fb-ink { position: absolute; left: 0; top: 0; width: 692px; height: 785px;
       -webkit-mask-image: conic-gradient(from 348deg at 231px 452px, #000 0deg, #000 calc(var(--fa, 0) * 1deg), transparent calc(var(--fa, 0) * 1deg + 0.8deg)),
         radial-gradient(circle at 231px 452px, #000 calc(var(--fr, 0) * 1px), transparent calc(var(--fr, 0) * 1px + 60px));
       mask-image: conic-gradient(from 348deg at 231px 452px, #000 0deg, #000 calc(var(--fa, 0) * 1deg), transparent calc(var(--fa, 0) * 1deg + 0.8deg)),
         radial-gradient(circle at 231px 452px, #000 calc(var(--fr, 0) * 1px), transparent calc(var(--fr, 0) * 1px + 60px)); }
     .k-tassel { position: absolute; transform-origin: 50% 3%; }
+    /* coupe sur le flash seul, sur papier uni */
+    #k-cut { position: absolute; left: -1080px; top: -1920px; width: 3240px; height: 5760px; background: #ede6da; visibility: hidden; }
+    #k-cutpush { position: absolute; left: 1080px; top: 1920px; width: 1080px; height: 1920px; transform-origin: 540px 900px; }
   </style>
   <div id="root" data-composition-id="croquis" data-width="1080" data-height="1920">
     <svg width="0" height="0" style="position:absolute">
@@ -45,109 +57,198 @@
           <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="5" result="n" />
           <feDisplacementMap id="k-bleedB-d" in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G" />
         </filter>
-        <filter id="k-breeze" x="-5%" y="-5%" width="110%" height="110%">
-          <feTurbulence id="k-breeze-t" type="fractalNoise" baseFrequency="0.006 0.01" numOctaves="1" seed="2" result="n" />
-          <feDisplacementMap id="k-breeze-d" in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="B" />
+        <!-- trait de crayon légèrement tremblé pour les lignes de construction -->
+        <filter id="k-pencil" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="8" result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </defs>
     </svg>
     <div id="k-cam">
-      <div id="k-book">
-        <!-- PAGE 2 : croquis B (éventail + mèches, crayon) -> flash B -->
-        <div id="k-p2" class="k-page">
-          <div id="k-p2-push" class="k-push">
-            <img class="k-abs" src="assets/img/croquisB_page.jpg" style="left:-310px; top:174px; width:1270.5px; height:1806.75px; mix-blend-mode:multiply" />
-            <img id="k-bfan" class="k-abs" src="assets/img/croquisB_fan.png" style="left:-310px; top:174px; width:1270.5px; height:1806.75px" />
-            <div id="k-fb">
-              <div id="k-fb-bleed" style="position:absolute; inset:0; filter:url(#k-bleedB)">
-                <img id="k-fb-ink" src="assets/img/flashB_ink.png" />
+      <div id="k-zoom">
+        <div id="k-book">
+          <div id="k-left"><div id="k-left-shade"></div></div>
+          <!-- PAGE 2 : croquis B (éventail + mèches, crayon) -> calque -> flash B -->
+          <div id="k-p2" class="k-page">
+            <div id="k-p2-push" class="k-push">
+              <img class="k-abs" src="assets/img/croquisB_page.jpg" style="left:-310px; top:174px; width:1270.5px; height:1806.75px; mix-blend-mode:multiply" />
+              <img id="k-bfan" class="k-abs" src="assets/img/croquisB_fan.png" style="left:-310px; top:174px; width:1270.5px; height:1806.75px" />
+              <div id="k-calque">
+                <svg id="k-sheet-shadow" width="1080" height="1920" viewBox="0 0 1080 1920">
+                  <filter id="k-sheet-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14" /></filter>
+                  <path id="k-sheet-shadow-p" d="" fill="rgba(18,17,16,0.22)" filter="url(#k-sheet-blur)" transform="translate(10 18)" />
+                </svg>
+                <div id="k-sheet"></div>
+                <div id="k-fb" class="k-fb">
+                  <svg width="692" height="785" viewBox="0 0 692 785" style="position:absolute;left:0;top:0;overflow:visible">
+                    <defs>
+                      <mask id="k-eraseB" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1100" height="1200">
+                        <rect x="-200" y="-200" width="1100" height="1200" fill="#fff" />
+                        <path id="k-eraseB-p" d="M-80 120 L780 40 L-80 360 L780 300 L-80 620 L780 560 L-80 860 L780 820" fill="none" stroke="#000" stroke-width="230" stroke-linecap="round" stroke-linejoin="round" />
+                      </mask>
+                    </defs>
+                    <g mask="url(#k-eraseB)"><g id="k-guidesB" filter="url(#k-pencil)" fill="none" stroke="#6e6a64" stroke-opacity="0.35" stroke-width="1.5" vector-effect="non-scaling-stroke"></g></g>
+                    <g id="k-crumbsB"></g>
+                  </svg>
+                  <div id="k-fb-bleed" style="position:absolute; inset:0; filter:url(#k-bleedB)">
+                    <img id="k-fb-ink" src="assets/img/flashB_ink.png" />
+                  </div>
+                  <img id="k-tasL" class="k-tassel" src="assets/img/flashB_tasselL.png" style="left:19px; top:389px; width:68px; height:160px" />
+                  <img id="k-tasR" class="k-tassel" src="assets/img/flashB_tasselR.png" style="left:87px; top:389px; width:42px; height:160px" />
+                </div>
               </div>
-              <img id="k-tasL" class="k-tassel" src="assets/img/flashB_tasselL.png" style="left:19px; top:389px; width:68px; height:160px" />
-              <img id="k-tasR" class="k-tassel" src="assets/img/flashB_tasselR.png" style="left:87px; top:389px; width:42px; height:160px" />
             </div>
+            <div class="k-gutter"></div>
+            <div id="k-p2-shadow"></div>
+            <div id="k-lab3" class="k-label">CROQUIS · 30.09</div>
+            <div id="k-lab4" class="k-label">FLASH · 17.10</div>
           </div>
-          <div class="k-gutter"></div>
-          <div id="k-p2-shadow"></div>
-          <div id="k-lab3" class="k-label">CROQUIS — 30.09</div>
-          <div id="k-lab4" class="k-label">FLASH — 17.10</div>
-        </div>
-        <!-- PAGE 1 : croquis A (stylo bille bleu) -> flash A -->
-        <div id="k-p1" class="k-page">
-          <div id="k-p1-push" class="k-push">
-            <img id="k-apage" class="k-abs" src="assets/img/croquisA_page.jpg" style="left:170px; top:190px; width:1080px; height:1663px; mix-blend-mode:multiply" />
-            <img id="k-aink" class="k-abs" src="assets/img/croquisA_ink.png" style="left:170px; top:190px; width:1080px; height:1663px" />
-            <svg id="k-asvg" class="k-abs" width="1080" height="1920" viewBox="0 0 1080 1920" style="left:0; top:0; overflow:visible">
-              <defs>
-                <mask id="k-amask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1200" height="1500">
-                  <g id="k-amask-g"></g>
-                  <rect id="k-amask-full" x="-200" y="-200" width="1200" height="1500" fill="#fff" opacity="0" />
-                </mask>
-              </defs>
-              <g transform="translate(170 190) scale(1.35)">
-                <g id="k-abreeze">
+          <!-- PAGE 1 : croquis A (stylo bille bleu) -> flash A -->
+          <div id="k-p1" class="k-page">
+            <div id="k-p1-push" class="k-push">
+              <img id="k-apage" class="k-abs" src="assets/img/croquisA_page.jpg" style="left:170px; top:190px; width:1080px; height:1663px; mix-blend-mode:multiply" />
+              <img id="k-aink" class="k-abs" src="assets/img/croquisA_ink.png" style="left:170px; top:190px; width:1080px; height:1663px" />
+              <svg id="k-asvg" class="k-abs" width="1080" height="1920" viewBox="0 0 1080 1920" style="left:0; top:0; overflow:visible">
+                <defs>
+                  <mask id="k-amask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1200" height="1500">
+                    <g id="k-amask-g"></g>
+                    <rect id="k-amask-full" x="-200" y="-200" width="1200" height="1500" fill="#fff" opacity="0" />
+                  </mask>
+                  <mask id="k-eraseA" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1200" height="1500">
+                    <rect x="-200" y="-200" width="1200" height="1500" fill="#fff" />
+                    <path id="k-eraseA-p" d="M-80 60 L780 220 L-80 430 L780 600 L-80 800 L780 980 L-80 1150 L780 1180" fill="none" stroke="#000" stroke-width="330" stroke-linecap="round" stroke-linejoin="round" />
+                  </mask>
+                </defs>
+                <g transform="translate(170 190) scale(1.35)">
                   <g id="k-amatrix">
+                    <!-- lignes de construction au graphite : axe de la tige, ellipses des feuilles -->
+                    <g mask="url(#k-eraseA)">
+                      <g id="k-guidesA" filter="url(#k-pencil)" fill="none" stroke="#6e6a64" stroke-opacity="0.35" stroke-width="1.5" vector-effect="non-scaling-stroke">
+                        <path d="M307 28 C332 120 300 250 315 380 S362 560 400 640 S505 820 480 1045" />
+                        <ellipse cx="150" cy="372" rx="152" ry="52" transform="rotate(-38 150 372)" />
+                        <ellipse cx="552" cy="546" rx="150" ry="50" transform="rotate(40 552 546)" />
+                        <ellipse cx="472" cy="842" rx="214" ry="56" transform="rotate(68 472 842)" />
+                        <path d="M330 300 C380 380 410 410 432 424" /><path d="M350 540 C372 590 385 615 396 640" />
+                      </g>
+                    </g>
+                    <g id="k-crumbsA"></g>
                     <g id="k-ableed" filter="url(#k-bleedA)">
-                      <image href="assets/img/flashA_ink.png" width="702" height="1065" mask="url(#k-amask)" />
+                      <image href="assets/img/flashA_stem.png" width="702" height="1065" mask="url(#k-amask)" />
+                      <g id="k-leafL"><image href="assets/img/flashA_leafL.png" width="702" height="1065" mask="url(#k-amask)" /></g>
+                      <g id="k-leafR"><image href="assets/img/flashA_leafR.png" width="702" height="1065" mask="url(#k-amask)" /></g>
+                      <g id="k-leafB"><image href="assets/img/flashA_leafB.png" width="702" height="1065" mask="url(#k-amask)" /></g>
                     </g>
                   </g>
                 </g>
-              </g>
-            </svg>
-            <!-- tache d'encre et traces de gomme dans les coins -->
-            <svg id="k-blot" viewBox="0 0 60 52"><path d="M22 10 c10 -8 28 -4 30 10 c2 12 -8 18 -16 22 c-8 4 -10 12 -20 8 c-10 -4 -4 -14 -8 -20 c-4 -8 6 -14 14 -20z" fill="#121110" opacity="0.82" /><circle cx="54" cy="44" r="3" fill="#121110" opacity="0.7" /><circle cx="8" cy="6" r="1.8" fill="#121110" opacity="0.6" /></svg>
-            <svg id="k-eraser" viewBox="0 0 190 90">
-              <filter id="k-er-f"><feGaussianBlur stdDeviation="6" /></filter>
-              <ellipse cx="80" cy="44" rx="70" ry="22" fill="#6e6a64" opacity="0.10" filter="url(#k-er-f)" transform="rotate(-8 80 44)" />
-              <path d="M30 52 q40 -18 92 -14" stroke="#6e6a64" stroke-width="10" opacity="0.07" fill="none" stroke-linecap="round" filter="url(#k-er-f)" />
-              <g fill="#cfc6b6"><ellipse cx="142" cy="60" rx="5" ry="2.2" transform="rotate(20 142 60)" /><ellipse cx="156" cy="52" rx="3.4" ry="1.6" /><ellipse cx="150" cy="70" rx="2.6" ry="1.4" transform="rotate(-30 150 70)" /></g>
-            </svg>
+              </svg>
+              <svg id="k-blot" viewBox="0 0 60 52"><path d="M22 10 c10 -8 28 -4 30 10 c2 12 -8 18 -16 22 c-8 4 -10 12 -20 8 c-10 -4 -4 -14 -8 -20 c-4 -8 6 -14 14 -20z" fill="#121110" opacity="0.82" /><circle cx="54" cy="44" r="3" fill="#121110" opacity="0.7" /><circle cx="8" cy="6" r="1.8" fill="#121110" opacity="0.6" /></svg>
+              <svg id="k-eraser-deco" viewBox="0 0 190 90">
+                <filter id="k-er-f"><feGaussianBlur stdDeviation="6" /></filter>
+                <ellipse cx="80" cy="44" rx="70" ry="22" fill="#6e6a64" opacity="0.10" filter="url(#k-er-f)" transform="rotate(-8 80 44)" />
+                <path d="M30 52 q40 -18 92 -14" stroke="#6e6a64" stroke-width="10" opacity="0.07" fill="none" stroke-linecap="round" filter="url(#k-er-f)" />
+              </svg>
+            </div>
+            <div class="k-gutter"></div>
+            <div id="k-lab1" class="k-label">CROQUIS · STYLO BILLE</div>
+            <div id="k-lab2" class="k-label">FLASH · ENCRE</div>
           </div>
-          <div class="k-gutter"></div>
-          <div id="k-lab1" class="k-label">CROQUIS — STYLO BILLE</div>
-          <div id="k-lab2" class="k-label">FLASH — ENCRE</div>
-          <div id="k-p1-turnshade"></div>
+          <div id="k-turn"></div>
+          <svg id="k-spiral" viewBox="0 0 70 1120"></svg>
         </div>
-        <div id="k-turn"></div>
-        <svg id="k-spiral" viewBox="0 0 70 1120"></svg>
+      </div>
+      <!-- 8,1 : coupe sur le flash seul (le calque est parti avec le dessin propre) -->
+      <div id="k-cut">
+        <div id="k-cutpush">
+          <div id="k-fb2" class="k-fb">
+            <img src="assets/img/flashB_ink.png" style="position:absolute;left:0;top:0;width:692px;height:785px" />
+            <img id="k-tasL2" class="k-tassel" src="assets/img/flashB_tasselL.png" style="left:19px; top:389px; width:68px; height:160px" />
+            <img id="k-tasR2" class="k-tassel" src="assets/img/flashB_tasselR.png" style="left:87px; top:389px; width:42px; height:160px" />
+          </div>
+        </div>
       </div>
     </div>
   </div>
   <script>
     (function () {
       const K = InkKit, $ = (s) => document.querySelector(s);
+      const NS = "http://www.w3.org/2000/svg";
       const T0 = 2.4; // début de la scène dans le film
       const tl = gsap.timeline({ paused: true });
       $("#k-spiral").innerHTML = K.spiralRings();
+      K.ensurePressFilter();
+      const pIO = K.ease("power2.inOut");
 
       /* ---------- Page 1 : flash A tracé par-dessus le croquis (masque potrace) ---------- */
       const MA = JINKX.align.A.matrix;
       $("#k-amatrix").setAttribute("transform", `matrix(${MA[0][0]} ${MA[1][0]} ${MA[0][1]} ${MA[1][1]} ${MA[0][2]} ${MA[1][2]})`);
-      const stemTop = [MA[0][0] * 307 + MA[0][1] * 28 + MA[0][2], MA[1][0] * 307 + MA[1][1] * 28 + MA[1][2]];
       const trA = new K.TraceReveal($("#k-amask-g"), JINKX.flashA.polys, { width: 22 });
-      trA.ease = K.ease("power2.inOut");
+      trA.ease = pIO;
       trA.grow = true;
       const byTop = trA.items.map((it, i) => [it.bbox[1], i]).sort((a, b) => a[0] - b[0]);
       const rankA = []; byTop.forEach(([, i], r) => (rankA[i] = r));
       const Lmax = Math.max(...trA.items.map((it) => it.L));
       trA.schedule((it, i) => {
         const s = 0.6 + 0.7 * (rankA[i] / trA.items.length);
-        const d = Math.min(0.36 + 0.6 * Math.sqrt(it.L / Lmax), 2.0 - s);
-        return [s, d];
+        return [s, Math.min(0.36 + 0.6 * Math.sqrt(it.L / Lmax), 2.0 - s)];
       });
       tl.fromTo("#k-amask-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.35, ease: "power2.inOut" }, 1.75);
-      // le bleu se désature puis s'efface sous l'encre ; les lignes du cahier pâlissent
       tl.fromTo("#k-aink", { filter: "saturate(1)", opacity: 1 }, { filter: "saturate(0)", duration: 0.7, ease: "power2.inOut" }, 0.6);
       tl.to("#k-aink", { opacity: 0, duration: 0.8, ease: "power2.in" }, 1.2);
       tl.fromTo("#k-apage", { opacity: 1 }, { opacity: 0.5, duration: 1.4, ease: "power2.inOut" }, 0.6);
 
-      /* ---------- micro-labels ---------- */
+      /* ---------- lignes de construction : tracées en 0,3 s, puis gommées (2–3 allers-retours) ---------- */
+      const prepGuides = (g) => [...g.children].map((el) => {
+        const L = el.getTotalLength();
+        el.setAttribute("stroke-dasharray", `${L} ${L}`); el.setAttribute("stroke-dashoffset", L);
+        return { el, L };
+      });
+      const guidesA = prepGuides($("#k-guidesA"));
+      // éventail : arcs concentriques et rayons depuis le rivet (repère du flash B)
+      const RV = [231, 452], a0 = -84, a1 = 50;
+      const arc = (r) => { const p = (a) => [RV[0] + r * Math.cos((a * Math.PI) / 180), RV[1] + r * Math.sin((a * Math.PI) / 180)]; const s = p(a0), e = p(a1); return `M${s[0].toFixed(1)} ${s[1].toFixed(1)} A${r} ${r} 0 0 1 ${e[0].toFixed(1)} ${e[1].toFixed(1)}`; };
+      let gB = "";
+      [120, 245, 330, 430, 520].forEach((r) => (gB += `<path d="${arc(r)}"/>`));
+      for (let a = a0; a <= a1 + 0.1; a += 13.4) { const c = Math.cos((a * Math.PI) / 180), s = Math.sin((a * Math.PI) / 180); gB += `<path d="M${(RV[0] + 30 * c).toFixed(1)} ${(RV[1] + 30 * s).toFixed(1)} L${(RV[0] + 540 * c).toFixed(1)} ${(RV[1] + 540 * s).toFixed(1)}"/>`; }
+      gB += `<circle cx="${RV[0]}" cy="${RV[1]}" r="22"/>`;
+      $("#k-guidesB").innerHTML = gB;
+      const guidesB = prepGuides($("#k-guidesB"));
+      const eraseA = $("#k-eraseA-p"), eraseB = $("#k-eraseB-p");
+      const LeA = eraseA.getTotalLength(), LeB = eraseB.getTotalLength();
+      [[eraseA, LeA], [eraseB, LeB]].forEach(([p, L]) => { p.setAttribute("stroke-dasharray", `${L} ${L + 10}`); p.setAttribute("stroke-dashoffset", L); });
+      // miettes de gomme le long du geste
+      const crumbs = (g, path, L, n, seed, scale) => {
+        const r = K.mulberry32(seed), out = [];
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n, pt = path.getPointAtLength(u * L);
+          const e = document.createElementNS(NS, "ellipse");
+          e.setAttribute("fill", "#cfc6b6");
+          g.appendChild(e);
+          out.push({ e, u, x: pt.x + (r() - 0.5) * 160, y: pt.y + (r() - 0.5) * 120, rx: (3 + r() * 4) * scale, ry: (1.6 + r() * 2) * scale, dx: (r() - 0.5) * 60, dy: 20 + r() * 50, rot: r() * 180 });
+        }
+        return out;
+      };
+      const crA = crumbs($("#k-crumbsA"), eraseA, LeA, 9, 3, 1.1), crB = crumbs($("#k-crumbsB"), eraseB, LeB, 9, 4, 1.2);
+      const drawGuides = (gs, t, at, dur) => { const k = pIO(K.clamp((t - at) / dur)); gs.forEach((g) => g.el.setAttribute("stroke-dashoffset", (g.L * (1 - k)).toFixed(1))); };
+      const doErase = (p, L, cr, t, at, dur) => {
+        const k = K.clamp((t - at) / dur);
+        p.setAttribute("stroke-dashoffset", (L * (1 - k)).toFixed(1));
+        for (const c of cr) {
+          const age = t - (at + c.u * dur);
+          const vis = age > 0 && age < 0.45;
+          c.e.setAttribute("rx", vis ? c.rx : 0); c.e.setAttribute("ry", vis ? c.ry : 0);
+          c.e.setAttribute("transform", `translate(${(c.x + c.dx * Math.max(0, age)).toFixed(1)} ${(c.y + c.dy * Math.max(0, age)).toFixed(1)}) rotate(${c.rot})`);
+          c.e.setAttribute("opacity", (vis ? 1 - age / 0.45 : 0).toFixed(3));
+        }
+      };
+
+      /* ---------- micro-labels : apparition par pression d'encre ---------- */
       const lab = ["#k-lab1", "#k-lab2", "#k-lab3", "#k-lab4"].map((s) => K.splitLetters($(s)));
-      K.typeIn(tl, lab[0], 0.1, 0.03);
-      K.typeOut(tl, lab[0], 1.4, 0.016);
-      K.typeIn(tl, lab[1], 1.8, 0.035);
-      K.typeIn(tl, lab[2], 3.5, 0.03);
-      K.typeOut(tl, lab[2], 5.1, 0.016);
-      K.typeIn(tl, lab[3], 5.4, 0.035);
+      K.pressIn(tl, lab[0], 0.1);
+      K.pressOut(tl, lab[0], 1.55);
+      K.pressIn(tl, lab[1], 1.8);
+      K.pressIn(tl, lab[2], 3.65);
+      K.pressOut(tl, lab[2], 4.6);
+      K.pressIn(tl, lab[3], 4.8);
 
       /* ---------- tourne de page à 5,4 s (local 3,0) : 8 bandes chaînées, recto + verso (dessin en transparence) ---------- */
       const NSTRIP = 8, SW = 1080 / NSTRIP;
@@ -158,7 +259,7 @@
           ${$("#k-blot").outerHTML.replace('id="k-blot"', 'style="position:absolute;left:868px;top:318px;width:60px;height:52px"')}
         </div>
         <div style="position:absolute;left:0;top:0;width:78px;height:100%;background:linear-gradient(90deg,rgba(18,17,16,0.16),rgba(18,17,16,0))"></div>
-        <div class="k-label" style="opacity:1">FLASH — ENCRE</div>`;
+        <div class="k-label">FLASH · ENCRE</div>`;
       const ghostHTML = `<img src="assets/img/flashA_ink.png" style="position:absolute;left:0;top:0;width:702px;height:1065px;transform-origin:0 0;transform:scale(1.06) ${flashTf}">`;
       const strips = [];
       let parent = $("#k-turn");
@@ -168,52 +269,65 @@
         st.style.left = (k === 0 ? 0 : SW) + "px";
         st.style.width = SW + "px";
         const x0 = k * SW;
-        st.innerHTML = `<div class="k-face"><div class="k-clone" style="left:${-x0}px">${frontHTML}</div><div class="k-fshade"></div></div>
+        st.innerHTML = `<div class="k-face"><div class="k-clone" style="left:${-x0}px">${frontHTML}</div><div class="k-fshade"></div><div class="k-sheen"></div></div>
           <div class="k-face k-back"><div class="k-ghost" style="left:${-(1080 - x0 - SW)}px">${ghostHTML}</div><div class="k-bshade"></div></div>`;
         parent.appendChild(st);
-        strips.push({ el: st, fs: st.querySelector(".k-fshade"), bs: st.querySelector(".k-bshade") });
+        strips.push({ el: st, fs: st.querySelector(".k-fshade"), bs: st.querySelector(".k-bshade"), sh: st.querySelector(".k-sheen") });
         parent = st;
       }
       const turnEl = $("#k-turn");
 
-      /* ---------- Page 2 : l'éventail du croquis s'ouvre, puis le flash B se déploie pétale par pétale ---------- */
+      /* ---------- Page 2 : éventail du croquis, papier calque, flash B tracé sur le calque ---------- */
       const MB = JINKX.align.B.matrix, sB = 1.65;
-      $("#k-fb").style.transform = `matrix(${sB * MB[0][0]}, ${sB * MB[1][0]}, ${sB * MB[0][1]}, ${sB * MB[1][1]}, ${-310 + sB * MB[0][2]}, ${174 + sB * MB[1][2]})`;
-      tl.fromTo("#k-bfan", { opacity: 1 }, { opacity: 0, duration: 1.3, ease: "power2.in" }, 4.3);
-      tl.fromTo(["#k-tasL", "#k-tasR"], { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 5.25);
+      const fbTf = `matrix(${sB * MB[0][0]}, ${sB * MB[1][0]}, ${sB * MB[0][1]}, ${sB * MB[1][1]}, ${-310 + sB * MB[0][2]}, ${174 + sB * MB[1][2]})`;
+      $("#k-fb").style.transform = fbTf; $("#k-fb2").style.transform = fbTf;
+      // feuille de calque : rectangle aux bords légèrement gondolés autour de l'éventail
+      const mapB = (x, y) => [sB * (MB[0][0] * x + MB[0][1] * y + MB[0][2]) - 310, sB * (MB[1][0] * x + MB[1][1] * y + MB[1][2]) + 174];
+      const cs = [mapB(0, 0), mapB(692, 0), mapB(0, 785), mapB(692, 785)];
+      const X0 = Math.min(...cs.map((c) => c[0])) - 50, X1 = Math.min(1060, Math.max(...cs.map((c) => c[0])) + 40);
+      const Y0 = Math.min(...cs.map((c) => c[1])) - 50, Y1 = Math.max(...cs.map((c) => c[1])) + 60;
+      const rs = K.mulberry32(91);
+      const wav = (n, a, b, fixed, horiz, amp) => { const pts = []; for (let i = 0; i <= n; i++) { const u = a + ((b - a) * i) / n, w = (rs() - 0.5) * amp + Math.sin(i * 1.7) * amp * 0.5; pts.push(horiz ? [u, fixed + w] : [fixed + w, u]); } return pts; };
+      const edge = [...wav(14, X0, X1, Y0, true, 7), ...wav(16, Y0, Y1, X1, false, 6), ...wav(14, X1, X0, Y1, true, 7), ...wav(16, Y1, Y0, X0, false, 6)];
+      const sheetD = "M" + edge.map((p) => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L") + "Z";
+      const sheet = $("#k-sheet");
+      sheet.style.left = "0px"; sheet.style.top = "0px"; sheet.style.width = "1080px"; sheet.style.height = "1920px";
+      sheet.style.clipPath = `path('${sheetD}')`;
+      $("#k-sheet-shadow-p").setAttribute("d", sheetD);
+      tl.fromTo(["#k-tasL", "#k-tasR"], { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 5.3);
 
-      const p1 = $("#k-p1"), p1push = $("#k-p1-push"), p2push = $("#k-p2-push"), cam = $("#k-cam");
-      const turnShade = $("#k-p1-turnshade"), p2shadow = $("#k-p2-shadow");
-      const bfan = $("#k-bfan"), fbInk = $("#k-fb-ink"), tasL = $("#k-tasL"), tasR = $("#k-tasR");
+      const p1 = $("#k-p1"), p1push = $("#k-p1-push"), p2push = $("#k-p2-push"), cam = $("#k-cam"), zoom = $("#k-zoom");
+      const p2shadow = $("#k-p2-shadow"), calque = $("#k-calque"), cut = $("#k-cut"), cutpush = $("#k-cutpush");
+      const bfan = $("#k-bfan"), fbInk = $("#k-fb-ink"), tasL2 = $("#k-tasL2"), tasR2 = $("#k-tasR2");
       const bleedA = $("#k-bleedA-d"), bleedB = $("#k-bleedB-d"), ableed = $("#k-ableed"), fbBleed = $("#k-fb-bleed");
-      const breezeD = $("#k-breeze-d"), abreeze = $("#k-abreeze");
-      const pIO = K.ease("power2.inOut"), p4o = K.ease("power4.out");
-      const petals = (p) => { // progression « cran par cran » : 10 pétales
-        const N = 10, u = p * N, k = Math.min(N - 1, Math.floor(u)), f = u - k;
-        return Math.min(1, (k + K.smooth(K.smooth(f))) / N);
-      };
+      const leaves = [["#k-leafL", 285, 248, 0], ["#k-leafR", 428, 422, 1.9], ["#k-leafB", 395, 640, 3.7]].map(([s, x, y, ph]) => ({ el: $(s), x, y, ph }));
+      const petals = (p) => { const N = 10, u = p * N, k = Math.min(N - 1, Math.floor(u)), f = u - k; return Math.min(1, (k + K.smooth(K.smooth(f))) / N); };
 
       K.ticker(tl, 6.65, (t) => {
         const tg = T0 + t;
-        // fin de scène : la caméra plonge dans le rivet de l'éventail (le point de départ de la dissolution)
-        const dive = t < 5.7 ? 1 : K.tw(t, 5.7, 0.95, 1, 1.7, "power2.in");
-        K.applyCam(cam, tg, dive);
-        // push-in lent par page : 1.00 -> 1.06
+        // fin de scène : plongée dans le rivet de l'éventail
+        K.applyCam(cam, tg, t < 5.75 ? 1 : K.tw(t, 5.75, 0.9, 1, 1.7, "power2.in"));
+        // pendant la tourne de page, la caméra recule pour montrer le volume de la feuille
+        const zz = t < 3.2 ? K.tw(t, 2.75, 0.35, 1, 0.6, "power2.inOut") : K.tw(t, 3.5, 0.35, 0.6, 1, "power2.inOut");
+        zoom.style.transform = `scale(${zz.toFixed(5)})`;
         p1push.style.transform = `scale(${(1 + 0.06 * K.clamp(t / 3.0)).toFixed(5)})`;
-        p2push.style.transform = `scale(${(1 + 0.06 * K.clamp((t - 3.0) / 3.45)).toFixed(5)})`;
+        const pushB = `scale(${(1 + 0.06 * K.clamp((t - 3.0) / 3.45)).toFixed(5)})`;
+        p2push.style.transform = pushB; cutpush.style.transform = pushB;
 
-        // tracé du flash A
+        // page 1 : guides, tracé, gomme, brise dans les feuilles
+        drawGuides(guidesA, t, 0.3, 0.3);
         trA.render(t);
+        doErase(eraseA, LeA, crA, t, 2.0, 0.35);
         const bA = 6 * (1 - K.clamp((t - 0.6) / 1.4));
-        if (bA > 0.05) { ableed.setAttribute("filter", "url(#k-bleedA)"); bleedA.setAttribute("scale", bA.toFixed(2)); }
-        else ableed.removeAttribute("filter");
-        // brise dans les feuilles après le tracé
-        const bw = K.clamp((t - 1.6) / 0.5);
-        const ang = bw * (2.0 * Math.sin((2 * Math.PI * (t - 1.6)) / 1.6) + 0.5 * Math.sin((2 * Math.PI * (t - 1.6)) / 0.7));
-        abreeze.setAttribute("transform", `rotate(${ang.toFixed(3)} ${stemTop[0].toFixed(1)} ${stemTop[1].toFixed(1)})`);
+        if (bA > 0.05) { ableed.setAttribute("filter", "url(#k-bleedA)"); bleedA.setAttribute("scale", bA.toFixed(2)); } else ableed.removeAttribute("filter");
+        const bw = K.clamp((t - 1.9) / 0.4);
+        for (const lf of leaves) {
+          const ang = bw * (1.5 * Math.sin((2 * Math.PI * (t - 1.9)) / 1.3 + lf.ph) + 0.4 * Math.sin((2 * Math.PI * (t - 1.9)) / 0.55 + lf.ph * 2));
+          lf.el.setAttribute("transform", `rotate(${ang.toFixed(3)} ${lf.x} ${lf.y})`);
+        }
 
-        // tourne de page : la feuille tourne autour de la spirale et se courbe (les bandes extérieures mènent)
-        const pt = K.clamp((t - 3.0) / 0.5), A = 180 * pIO(pt), B = 38 * Math.sin(Math.PI * pt);
+        // tourne de page : la feuille tourne autour de la spirale et se courbe ; reflet au passage à 90°
+        const pt = K.clamp((t - 3.0) / 0.5), A = 180 * pIO(pt), B = 40 * Math.sin(Math.PI * pt);
         const turning = t >= 3.0 && t < 3.5;
         p1.style.visibility = t >= 3.0 ? "hidden" : "visible";
         turnEl.style.visibility = turning ? "visible" : "hidden";
@@ -224,30 +338,33 @@
             s.el.style.transform = `rotateY(${(-(phi - prev)).toFixed(3)}deg)`;
             prev = phi;
             const r = (phi * Math.PI) / 180;
-            s.fs.style.opacity = (0.32 * Math.sin(r) + 0.1 * K.clamp(phi / 90)).toFixed(3);
-            s.bs.style.opacity = (0.28 * Math.sin(r)).toFixed(3);
+            s.fs.style.opacity = (0.34 * Math.sin(r) + 0.08 * K.clamp(phi / 90)).toFixed(3);
+            s.bs.style.opacity = (0.3 * Math.sin(r)).toFixed(3);
+            s.sh.style.opacity = (0.55 * Math.exp(-(((phi - 80) / 18) ** 2))).toFixed(3);
           });
         }
-        // ombre dynamique sur la page du dessous : suit le bord libre, s'étire puis se rétracte
-        const edge = 1080 * Math.max(0, Math.cos((Math.min(180, A + B) * Math.PI) / 180));
-        p2shadow.style.width = (edge + 160 * Math.sin(Math.PI * pt)).toFixed(1) + "px";
-        p2shadow.style.opacity = turning ? (0.85 * Math.sin(Math.PI * Math.min(1, pt * 1.15))).toFixed(3) : 0;
+        const edgeX = 1080 * Math.max(0, Math.cos((Math.min(180, A + B) * Math.PI) / 180));
+        p2shadow.style.width = (edgeX + 180 * Math.sin(Math.PI * pt)).toFixed(1) + "px";
+        p2shadow.style.opacity = turning ? (0.9 * Math.sin(Math.PI * Math.min(1, pt * 1.15))).toFixed(3) : 0;
 
-        // l'éventail du croquis s'ouvre depuis le rivet (local 3,45 -> 4,05)
-        const fo = 141 * pIO(K.clamp((t - 3.5) / 0.6));
-        bfan.style.setProperty("--fo", fo.toFixed(2));
-        // flash B : balayage angulaire pétale par pétale (local 4,2 -> 5,4), puis révélation complète
-        const pf = petals(pIO(K.clamp((t - 4.2) / 1.2)));
-        fbInk.style.setProperty("--fa", (152 * pf).toFixed(2));
-        fbInk.style.setProperty("--fr", (900 * pIO(K.clamp((t - 5.15) / 0.35))).toFixed(1));
-        const bB = 6 * (1 - K.clamp((t - 4.2) / 1.45));
-        if (bB > 0.05) { fbBleed.style.filter = "url(#k-bleedB)"; bleedB.setAttribute("scale", bB.toFixed(2)); }
-        else fbBleed.style.filter = "none";
-        // pompons : pendule amorti, 2 oscillations, à partir de 7,8 s (local 5,4)
-        const tp = t - 5.4;
-        const swing = tp > 0 ? 9 * Math.exp(-1.6 * tp) * Math.sin(2 * Math.PI * 1.65 * tp) : 0;
-        tasL.style.transform = `rotate(${swing.toFixed(3)}deg)`;
-        tasR.style.transform = `rotate(${(swing * 0.8 + (tp > 0 ? 2.5 * Math.exp(-1.6 * tp) * Math.sin(2 * Math.PI * 1.65 * tp - 0.6) : 0)).toFixed(3)}deg)`;
+        // l'éventail du croquis s'ouvre depuis le rivet
+        bfan.style.setProperty("--fo", (141 * pIO(K.clamp((t - 3.5) / 0.5))).toFixed(2));
+        // le calque glisse sur le croquis (6,4 -> 6,8), puis se soulève en emportant le dessin propre (7,9 -> 8,1)
+        const cin = K.tw(t, 4.0, 0.4, 1, 0, "power3.out"), lift = K.tw(t, 5.5, 0.25, 0, 1, "power2.in");
+        calque.style.transform = `perspective(1400px) translate(${(1150 * cin).toFixed(1)}px, ${(-160 * lift).toFixed(1)}px) rotate(${(1.2 * cin).toFixed(2)}deg) rotateX(${(22 * lift).toFixed(2)}deg)`;
+        calque.style.visibility = t >= 4.0 ? "visible" : "hidden";
+        drawGuides(guidesB, t, 4.4, 0.3);
+        doErase(eraseB, LeB, crB, t, 5.3, 0.3);
+        fbInk.style.setProperty("--fa", (152 * petals(pIO(K.clamp((t - 4.55) / 0.85)))).toFixed(2));
+        fbInk.style.setProperty("--fr", (900 * pIO(K.clamp((t - 5.2) / 0.3))).toFixed(1));
+        const bB = 6 * (1 - K.clamp((t - 4.55) / 1.0));
+        if (bB > 0.05) { fbBleed.style.filter = "url(#k-bleedB)"; bleedB.setAttribute("scale", bB.toFixed(2)); } else fbBleed.style.filter = "none";
+        // 8,1 : coupe sur le flash seul ; les pompons se balancent (pendule amorti)
+        cut.style.visibility = t >= 5.7 ? "visible" : "hidden";
+        const tp = t - 5.7;
+        const sw = tp > 0 ? 9 * Math.exp(-1.8 * tp) * Math.sin(2 * Math.PI * 1.65 * tp) : 0;
+        const sw2 = sw * 0.8 + (tp > 0 ? 2.5 * Math.exp(-1.8 * tp) * Math.sin(2 * Math.PI * 1.65 * tp - 0.6) : 0);
+        tasL2.style.transform = `rotate(${sw.toFixed(3)}deg)`; tasR2.style.transform = `rotate(${sw2.toFixed(3)}deg)`;
       });
       window.__timelines["croquis"] = tl;
     })();

@@ -135,6 +135,19 @@ L = L[y0:y1, x0:x1]
 save_rgba(f"{OUT}/flashA_ink.png", ink_layer(a), a)
 cv2.imwrite(f"{TMP}/flashA_bw.png", ((L > 0.5) * 255).astype(np.uint8))
 print("flashA crop", (x0, y0, x1, y1), a.shape[::-1])
+# V3 : chaque feuille sur son propre calque (brise autour de son attache), la tige à part
+LEAVES = {
+    "leafL": [(14, 515), (25, 400), (105, 268), (200, 236), (288, 240), (276, 300), (232, 362), (150, 405), (80, 436), (42, 485)],
+    "leafR": [(418, 418), (482, 436), (562, 486), (614, 578), (690, 676), (598, 656), (516, 614), (458, 562), (436, 482)],
+    "leafB": [(392, 636), (444, 656), (524, 700), (552, 760), (552, 834), (534, 904), (512, 984), (474, 1052), (464, 1000), (452, 902), (424, 842), (392, 792), (384, 700)],
+}
+rest_a = a.copy()
+for name, poly in LEAVES.items():
+    m = np.zeros(a.shape, np.uint8); cv2.fillPoly(m, [np.array(poly, np.int32)], 255)
+    m = cv2.GaussianBlur(m, (0, 0), 1.0).astype(np.float32) / 255
+    save_rgba(f"{OUT}/flashA_{name}.png", ink_layer(a), a * m)
+    rest_a = rest_a * (1 - m)
+save_rgba(f"{OUT}/flashA_stem.png", ink_layer(a), rest_a)
 
 # ---------------------------------------------------------------- Flash B (éventail)
 img = cv2.imread(f"{SRC}/04_flash_eventail_chrysanthemes.png")
@@ -317,17 +330,17 @@ import json
 json.dump({"size": [ww, hh], "dots": dots}, open(f"{TMP}/peau1_dots.json", "w"))
 print("peau1 size", (ww, hh), "dots", len(dots))
 # V2 : silhouette seule (traits gris nets, sans les traces de l'inpainting), pour un tracé propre
-gb = g / 255.0
-sil = smoothstep(0.93, 0.62, gb) * (1 - cv2.dilate(tat_d, np.ones((7, 7), np.uint8)).astype(np.float32) / 255)
-sil = cv2.morphologyEx((sil * 255).astype(np.uint8), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8)).astype(np.float32) / 255
-n_cc, lab, stats, _ = cv2.connectedComponentsWithStats((sil > 0.3).astype(np.uint8))
+bh = cv2.morphologyEx(base.astype(np.uint8), cv2.MORPH_BLACKHAT, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))).astype(np.float32)
+sil = np.clip((bh - 6) / 38, 0, 1)
+sil = sil * (1 - cv2.dilate(tat_d, np.ones((5, 5), np.uint8)).astype(np.float32) / 255)
+n_cc, lab, stats, _ = cv2.connectedComponentsWithStats((sil > 0.25).astype(np.uint8))
 keep_s = np.zeros(sil.shape, bool)
 for i in range(1, n_cc):
-    if stats[i][4] >= 40:
+    if stats[i][4] >= 30:
         keep_s |= lab == i
 sil = sil * cv2.dilate(keep_s.astype(np.uint8), np.ones((3, 3), np.uint8))
 save_rgba(f"{OUT}/peau1_sil.png", ink_layer(sil), np.clip(sil * 1.15, 0, 1))
-cv2.imwrite(f"{TMP}/peau1sil_bw.png", ((sil < 0.35) * 255).astype(np.uint8))
+cv2.imwrite(f"{TMP}/peau1sil_bw.png", 255 - cv2.dilate(((sil > 0.3) * 255).astype(np.uint8), np.ones((3, 3), np.uint8)))
 
 # ---------------------------------------------------------------- Peau 2 (pied néo-tribal) : redressement + tirage
 img = cv2.imread(f"{SRC}/07_neotribal_pied_mockup.jpg")

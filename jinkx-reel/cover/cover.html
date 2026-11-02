@@ -1,36 +1,37 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><title>Jinkx — couverture</title>
 <style>
+@font-face { font-family: "IM Fell English SC"; src: url("../assets/fonts/IMFellEnglishSC-Regular.ttf"); }
 @font-face { font-family: "Cormorant Garamond"; font-style: italic; font-weight: 500; src: url("../assets/fonts/CormorantGaramond-MediumItalic.ttf"); }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 1080px; height: 1920px; overflow: hidden; background: #ede6da; }
 .fx { position: absolute; inset: 0; pointer-events: none; }
 #fan { position: absolute; left: 150px; top: 780px; width: 780px; height: 885px; }
 #sig { position: absolute; left: 0; top: 0; }
-#stamp { position: absolute; left: 742px; top: 610px; width: 180px; height: 180px; transform: rotate(-3deg); }
+#stamp { position: absolute; left: 810px; top: 520px; width: 112px; height: 112px; transform: rotate(-3deg); }
+#tattoo { position: absolute; left: 0; width: 1080px; top: 640px; text-align: center; font-family: "IM Fell English SC", serif; font-size: 40px; letter-spacing: .4em; padding-left: .4em; color: rgba(18,17,16,.8); }
 #lab { position: absolute; left: 0; width: 1080px; top: 1600px; text-align: center; font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 28px; letter-spacing: .15em; color: #6e6a64; }
 </style></head><body>
 <img id="fan" src="../assets/img/flashB_full.png">
 <svg id="sig" width="1080" height="1920" viewBox="0 0 1080 1920"><g id="sg" fill="none" stroke="#121110" stroke-linecap="round" stroke-linejoin="round"></g></svg>
-<svg id="stamp" viewBox="0 0 180 180">
+<div id="tattoo">TATTOO</div>
+<svg id="stamp" viewBox="0 0 120 120">
   <defs>
     <filter id="si" x="-8%" y="-8%" width="116%" height="116%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="3" seed="4" result="n2" />
-      <feDisplacementMap in="SourceGraphic" in2="n2" scale="7" xChannelSelector="R" yChannelSelector="G" result="edge" />
-      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="31" result="p" />
+      <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="4" result="n2" />
+      <feDisplacementMap in="SourceGraphic" in2="n2" scale="5" xChannelSelector="R" yChannelSelector="G" result="edge" />
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="2" seed="31" result="p" />
       <feColorMatrix in="p" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.3 0 0 0 0.72" result="press" />
-      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="23" result="n" />
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="23" result="n" />
       <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -3 2.75" result="holes" />
       <feComposite in="edge" in2="press" operator="in" result="e2" />
       <feComposite in="e2" in2="holes" operator="in" />
     </filter>
-    <mask id="txt"><rect width="180" height="180" fill="#fff" />
-      <rect x="16" y="16" width="148" height="148" rx="8" fill="none" stroke="#000" stroke-width="2.6" />
-      <text x="90" y="82" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="31" letter-spacing="2.5" fill="#000">JINKX</text>
-      <line x1="58" y1="96" x2="122" y2="96" stroke="#000" stroke-width="1.4" />
-      <text x="90" y="128" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="31" letter-spacing="2.5" fill="#000">TATOO</text></mask>
+    <mask id="txt"><rect width="120" height="120" fill="#fff" />
+      <rect x="11" y="11" width="98" height="98" rx="6" fill="none" stroke="#000" stroke-width="2.2" />
+      <text x="62" y="88" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="74" fill="#000">J</text></mask>
   </defs>
-  <g filter="url(#si)"><rect x="6" y="6" width="168" height="168" rx="14" fill="#c2381f" mask="url(#txt)" /></g>
+  <g filter="url(#si)"><rect x="4" y="4" width="112" height="112" rx="10" fill="#c2381f" mask="url(#txt)" /></g>
 </svg>
 
 <svg class="fx" width="1080" height="1920" style="mix-blend-mode:multiply;opacity:.25"><filter id="p"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="11" /><feColorMatrix type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.52  0 0 0 0 0.48  -1.2 0 0 0 1.05" /></filter><rect width="1080" height="1920" filter="url(#p)" /></svg>
@@ -39,7 +40,7 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: #ede6d
 <script src="../assets/data/wordmark.js"></script>
 <script>
   const WM = JINKX.wordmark, g = document.getElementById('sg');
-  g.setAttribute('transform', `translate(${WM.x0} ${WM.y0 - 70})`);
+  g.setAttribute('transform', `translate(${(1080 - WM.w * 1.06) / 2} 150) scale(1.06)`);
   g.removeAttribute('stroke');
   const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   p.setAttribute('d', WM.d); p.setAttribute('transform', WM.transform); p.setAttribute('fill', '#121110'); g.appendChild(p);
@@ -49,7 +50,7 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: #ede6d
   const dr = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   dr.setAttribute('d', 'M0 0 C7 -3.2 15 -7.5 23 -6.8 C30 -6 31.5 6 23 6.8 C15 7.5 7 3.2 0 0Z'); dr.setAttribute('fill', '#121110');
   dr.setAttribute('transform', `translate(${e1[0]} ${e1[1]}) rotate(${ang})`); g.appendChild(dr);
-  [[e1[0] + 40, e1[1] + 30], [118, 300]].forEach(([cx, cy]) => [[0, 0, 5.2], [13, -5, 4], [9, 11, 3.4]].forEach(([dx, dy, r]) => {
+  [[e1[0] - 4, e1[1] + 34], [118, 300]].forEach(([cx, cy]) => [[0, 0, 5.2], [13, -5, 4], [9, 11, 3.4]].forEach(([dx, dy, r]) => {
     const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); c.setAttribute('cx', cx + dx); c.setAttribute('cy', cy + dy); c.setAttribute('r', r); c.setAttribute('fill', '#121110'); g.appendChild(c); }));
 </script>
 </body></html>

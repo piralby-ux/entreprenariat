@@ -1,15 +1,16 @@
 <template>
   <style>
     @font-face { font-family: "Cormorant Garamond"; font-style: italic; font-weight: 500; src: url("assets/fonts/CormorantGaramond-MediumItalic.ttf"); }
-    #root { position: absolute; inset: 0; overflow: hidden; background: #e4dccf; }
+    @font-face { font-family: "IM Fell English SC"; font-style: normal; font-weight: 400; src: url("assets/fonts/IMFellEnglishSC-Regular.ttf"); }
+    #root { position: absolute; inset: 0; overflow: hidden; background: transparent; }
     #g-cam { position: absolute; inset: 0; transform-origin: 540px 960px; }
     #g-nb { position: absolute; inset: 0; transform-origin: 540px 960px; perspective: 2600px; perspective-origin: 540px 960px; }
     .g-abs { position: absolute; }
     #g-shadow { left: 222px; top: 395px; width: 640px; height: 1138px; border-radius: 6px;
       box-shadow: 0 38px 70px rgba(18, 17, 16, 0.32), 0 8px 18px rgba(18, 17, 16, 0.22); }
     .g-stack { width: 640px; height: 1138px; background: #e6decf; border: 1px solid rgba(110, 106, 100, 0.35); border-radius: 2px 5px 5px 2px; }
-    #g-page { left: 220px; top: 391px; width: 640px; height: 1138px; overflow: hidden; background: var(--paper, #ede6da); border-radius: 2px 4px 4px 2px; }
-    #g-pagecontent { position: absolute; background: #ede6da; left: 0; top: 0; width: 1080px; height: 1920px; transform: scale(0.592593); transform-origin: 0 0; }
+    #g-page { left: 220px; top: 391px; width: 640px; height: 1138px; overflow: hidden; background: transparent; border-radius: 2px 4px 4px 2px; }
+    #g-pagecontent { position: absolute; background: transparent; left: 0; top: 0; width: 1080px; height: 1920px; transform: scale(0.592593); transform-origin: 0 0; }
     .g-img { position: absolute; display: block; }
     #g-pageshade { position: absolute; left: 0; top: 0; height: 100%; width: 0px; background: linear-gradient(90deg, rgba(18,17,16,0.55), rgba(18,17,16,0.18) 70%, rgba(18,17,16,0)); }
     #g-gutter { position: absolute; left: 0; top: 0; width: 46px; height: 100%; background: linear-gradient(90deg, rgba(18,17,16,0.16), rgba(18,17,16,0)); }
@@ -21,18 +22,12 @@
     #g-front-sheen { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(237,230,218,0) 35%, rgba(237,230,218,0.07) 50%, rgba(237,230,218,0) 64%); }
     #g-back { transform: rotateY(180deg); background: #d9cfbf; }
     #g-back-shade { position: absolute; inset: 0; background: linear-gradient(270deg, rgba(18,17,16,0.35), rgba(18,17,16,0) 40%); opacity: 1; }
-    #g-label { position: absolute; left: 0; width: 100%; top: 1000px; text-align: center; font-family: "JetBrains Mono", monospace; font-weight: 500;
-      font-size: 24px; letter-spacing: 0.15em; color: rgba(217, 207, 191, 0.78); }
+    #g-label { position: absolute; left: 0; width: 100%; top: 990px; text-align: center; font-family: "IM Fell English SC", serif; font-weight: 400;
+      font-size: 31px; letter-spacing: 0.18em; padding-left: 0.18em; color: rgba(217, 207, 191, 0.8); filter: url(#ink-press); }
     #g-seal { position: absolute; left: 214px; top: 360px; width: 224px; height: 224px; }
-    #g-stampwrap { position: absolute; left: 742px; top: 700px; width: 180px; height: 180px; transform-origin: 50% 50%; }
-    .g-cta { position: absolute; left: 0; width: 1080px; text-align: center; white-space: pre; }
-    /* l'interlettrage ajoute un espace après la dernière lettre : on le compense pour un vrai centrage */
-    .g-mono { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 28px; letter-spacing: 0.12em; padding-left: 0.12em; color: rgba(18, 17, 16, 0.75); }
-    #g-ville { top: 912px; visibility: hidden; }
-    #g-cta1 { top: 966px; }
-    #g-cta2 { top: 1012px; font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 500; font-size: 44px; color: #121110; text-transform: uppercase; letter-spacing: 0.06em; padding-left: 0.06em;
-      -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--w, 0) * 1% - 8%), transparent calc(var(--w, 0) * 1%));
-      mask-image: linear-gradient(90deg, #000 calc(var(--w, 0) * 1% - 8%), transparent calc(var(--w, 0) * 1%)); }
+    #g-stampwrap { position: absolute; width: 112px; height: 112px; transform-origin: 50% 50%; }
+    #g-tattoo { position: absolute; left: 0; width: 1080px; text-align: center; font-family: "IM Fell English SC", serif; font-weight: 400; font-size: 40px;
+      letter-spacing: 0.4em; padding-left: 0.4em; color: rgba(18, 17, 16, 0.8); white-space: pre; filter: url(#ink-press); }
     #g-spiral { left: 186px; top: 400px; width: 70px; height: 1120px; overflow: visible; }
   </style>
   <div id="root" data-composition-id="signature" data-width="1080" data-height="1920">
@@ -43,7 +38,8 @@
         <div class="g-abs g-stack" style="left:223px; top:394px"></div>
         <div id="g-page" class="g-abs">
           <div id="g-pagecontent">
-            <!-- wordmark « Jinkx » : contour plein/délié (Pinyon Script) révélé par un masque qui suit le tracé central -->
+            <!-- wordmark « Jinkx » : contour plein/délié (Pinyon Script) révélé par un masque qui suit le tracé central ;
+                 une version crayonnée le précède d'une fraction de seconde -->
             <svg id="g-sig" width="1080" height="1920" viewBox="0 0 1080 1920" style="position:absolute;left:0;top:0;overflow:visible">
               <defs>
                 <mask id="g-wm-mask" maskUnits="userSpaceOnUse" x="-60" y="-60" width="960" height="540">
@@ -54,47 +50,46 @@
                   <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="17" result="n" />
                   <feDisplacementMap id="g-bleed-d" in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" />
                 </filter>
+                <filter id="g-pencil" x="-5%" y="-5%" width="110%" height="110%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="29" result="n" />
+                  <feDisplacementMap in="SourceGraphic" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
               </defs>
               <g id="g-wm">
+                <g id="g-pen" filter="url(#g-pencil)" fill="none" stroke="#6e6a64" stroke-linecap="round" stroke-linejoin="round"></g>
                 <g id="g-wm-ink" filter="url(#g-bleed)">
                   <g mask="url(#g-wm-mask)"><path id="g-wm-path" fill="#121110" /></g>
                 </g>
                 <g id="g-orn" fill="#121110"></g>
               </g>
             </svg>
-            <!-- sceau vermillon JINKX TATOO -->
+            <!-- « TATTOO » en IM Fell English SC, imprimé lettre par lettre -->
+            <div id="g-tattoo">TATTOO</div>
+            <!-- sceau vermillon « J », collé en bas à droite du « x » comme la signature d'un artiste sur une estampe -->
             <div id="g-stampwrap">
-              <svg id="g-stamp" viewBox="0 0 180 180" width="180" height="180">
+              <svg id="g-stamp" viewBox="0 0 120 120" width="112" height="112">
                 <defs>
                   <filter id="g-stamp-ink" x="-8%" y="-8%" width="116%" height="116%">
-                    <!-- bords irréguliers -->
-                    <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="3" seed="4" result="n2" />
-                    <feDisplacementMap in="SourceGraphic" in2="n2" scale="7" xChannelSelector="R" yChannelSelector="G" result="edge" />
-                    <!-- pression inégale : 85–100 % -->
-                    <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="31" result="p" />
+                    <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="4" result="n2" />
+                    <feDisplacementMap in="SourceGraphic" in2="n2" scale="5" xChannelSelector="R" yChannelSelector="G" result="edge" />
+                    <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="2" seed="31" result="p" />
                     <feColorMatrix in="p" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.3 0 0 0 0.72" result="press" />
-                    <!-- petits manques d'encre -->
-                    <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="2" seed="23" result="n" />
+                    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="23" result="n" />
                     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -3 2.75" result="holes" />
                     <feComposite in="edge" in2="press" operator="in" result="e2" />
                     <feComposite in="e2" in2="holes" operator="in" />
                   </filter>
-                  <mask id="g-stamp-text">
-                    <rect width="180" height="180" fill="#fff" />
-                    <rect x="16" y="16" width="148" height="148" rx="8" fill="none" stroke="#000" stroke-width="2.6" />
-                    <text x="90" y="82" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="31" letter-spacing="2.5" fill="#000">JINKX</text>
-                    <line x1="58" y1="96" x2="122" y2="96" stroke="#000" stroke-width="1.4" />
-                    <text x="90" y="128" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="31" letter-spacing="2.5" fill="#000">TATOO</text>
+                  <mask id="g-stamp-j">
+                    <rect width="120" height="120" fill="#fff" />
+                    <rect x="11" y="11" width="98" height="98" rx="6" fill="none" stroke="#000" stroke-width="2.2" />
+                    <text x="62" y="88" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="74" fill="#000">J</text>
                   </mask>
                 </defs>
                 <g filter="url(#g-stamp-ink)">
-                  <rect x="6" y="6" width="168" height="168" rx="14" fill="#c2381f" mask="url(#g-stamp-text)" />
+                  <rect x="4" y="4" width="112" height="112" rx="10" fill="#c2381f" mask="url(#g-stamp-j)" />
                 </g>
               </svg>
             </div>
-            <div id="g-ville" class="g-cta g-mono">TATOUEUSE</div>
-            <div id="g-cta1" class="g-cta g-mono">FLASHS DISPONIBLES</div>
-            <div id="g-cta2" class="g-cta g-serif">Réservations en DM</div>
           </div>
           <div id="g-gutter"></div>
           <div id="g-pageshade"></div>
@@ -122,7 +117,7 @@
                 <text x="57" y="80" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="66" fill="#171615">J</text>
               </g>
             </svg>
-            <div id="g-label">SKETCHBOOK — 2026</div>
+            <div id="g-label">SKETCHBOOK · 2026</div>
             <div id="g-front-shade"></div>
           </div>
           <div id="g-back" class="g-face">
@@ -146,26 +141,23 @@
       const $ = (s) => document.querySelector(s);
       // spirale métal : anneaux sur le bord de reliure
       $("#g-spiral").innerHTML = K.spiralRings();
+      K.ensurePressFilter();
 
-      const T0 = 18.0;
+      const T0 = 17.6; // la plume commence pendant que le tirage du pied sort du cadre
       const NS = "http://www.w3.org/2000/svg";
-      // ville : variable de la vidéo (hyperframes render --variables '{"ville":"Lyon"}') ; sans ville, la ligne n'apparaît pas
-      let ville = "";
-      try { const v = window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables(); if (v && v.ville && !/^\[/.test(v.ville)) ville = v.ville; } catch (e) {}
-      if (ville) { $("#g-ville").textContent = "TATOUEUSE · " + ville.toUpperCase(); }
-
-      /* wordmark */
-      const WM = JINKX.wordmark;
-      $("#g-wm").setAttribute("transform", `translate(${WM.x0} ${WM.y0})`);
+      const WM = JINKX.wordmark, WS = 1.06;            // ~75 % de la largeur
+      const X0 = (1080 - WM.w * WS) / 2, Y0 = 603;      // centré verticalement dans la zone sûre avec « TATTOO »
+      $("#g-wm").setAttribute("transform", `translate(${X0.toFixed(1)} ${Y0}) scale(${WS})`);
       const wp = $("#g-wm-path"); wp.setAttribute("d", WM.d); wp.setAttribute("transform", WM.transform);
-      const mg = $("#g-wm-mg");
+      $("#g-tattoo").style.top = (Y0 + (WM.h - 30) * WS + 52).toFixed(0) + "px";
+      const mg = $("#g-wm-mg"), pen = $("#g-pen");
+      const mk = (parent, st, attrs) => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", st.d); for (const k in attrs) p.setAttribute(k, attrs[k]); parent.appendChild(p); return p; };
       const strokes = WM.strokes.map((st) => {
-        const p = document.createElementNS(NS, "path");
-        p.setAttribute("d", st.d); p.setAttribute("fill", "none"); p.setAttribute("stroke", "#fff");
-        p.setAttribute("stroke-width", st.w); p.setAttribute("stroke-linecap", "round"); p.setAttribute("stroke-linejoin", "round");
-        p.setAttribute("stroke-dasharray", `${st.L} ${st.L + 20}`); p.setAttribute("stroke-dashoffset", st.L);
-        mg.appendChild(p);
-        return { p, L: st.L };
+        const m = mk(mg, st, { fill: "none", stroke: "#fff", "stroke-width": st.w, "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-dasharray": `${st.L} ${st.L + 20}`, "stroke-dashoffset": st.L });
+        // esquisse au crayon : deux passages hésitants, légèrement décalés
+        const p1 = mk(pen, st, { "stroke-width": 2.2, opacity: 0.3, "stroke-dasharray": `${st.L} ${st.L + 20}`, "stroke-dashoffset": st.L });
+        const p2 = mk(pen, st, { "stroke-width": 1.6, opacity: 0.2, transform: "translate(2.5 -1.8)", "stroke-dasharray": `${st.L} ${st.L + 20}`, "stroke-dashoffset": st.L });
+        return { m, p1, p2, L: st.L };
       });
       const total = strokes.reduce((a, s) => a + s.L + 25, 0);
       let acc = 0;
@@ -178,34 +170,47 @@
       const drop = document.createElementNS(NS, "path");
       drop.setAttribute("d", "M0 0 C7 -3.2 15 -7.5 23 -6.8 C30 -6 31.5 6 23 6.8 C15 7.5 7 3.2 0 0Z");
       drop.setAttribute("transform", `translate(${e1[0].toFixed(1)} ${e1[1].toFixed(1)}) rotate(${ang.toFixed(1)})`);
-      orn.appendChild(drop); ornEls.push({ el: drop, at: 1.12, kind: "drop", tf: drop.getAttribute("transform") });
-      const clusters = [[e1[0] + 40, e1[1] + 30], [118, 300]];
-      clusters.forEach(([cx, cy], ci) => {
+      orn.appendChild(drop); ornEls.push({ el: drop, at: 1.32, kind: "drop", tf: drop.getAttribute("transform") });
+      [[e1[0] - 4, e1[1] + 34], [118, 300]].forEach(([cx, cy], ci) => {
         [[0, 0, 5.2], [13, -5, 4], [9, 11, 3.4]].forEach(([dx, dy, r], di) => {
           const c = document.createElementNS(NS, "circle");
           c.setAttribute("cx", cx + dx); c.setAttribute("cy", cy + dy); c.setAttribute("r", 0);
-          orn.appendChild(c); ornEls.push({ el: c, at: 1.15 + ci * 0.15 + di * 0.05, kind: "dot", r });
+          orn.appendChild(c); ornEls.push({ el: c, at: 1.36 + ci * 0.12 + di * 0.04, kind: "dot", r });
         });
       });
-      tl.fromTo("#g-wm-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.2 }, 1.05);
+      tl.fromTo("#g-wm-full", { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.2 }, 1.25);
+      // « TATTOO » lettre par lettre, juste après le dernier point
+      K.pressIn(tl, K.splitLetters($("#g-tattoo")), 1.62, 0.045);
+      // sceau « J » en bas à droite du « x »
+      const stamp = $("#g-stampwrap");
+      const sx = Math.min(940 - 112, X0 + WS * (e1[0] - 70)), sy = Y0 + WS * (e1[1] + 92);
+      stamp.style.left = sx.toFixed(0) + "px"; stamp.style.top = sy.toFixed(0) + "px";
 
-      /* CTA : la ligne mono se tape, la ligne serif s'écrit en balayage doux ; complet à 19,5 s */
-      if (ville) { tl.set("#g-ville", { visibility: "visible" }, 0); K.typeIn(tl, K.splitLetters($("#g-ville")), 0.75, 0.014); }
-      K.typeIn(tl, K.splitLetters($("#g-cta1")), 0.9, 0.016);
-
-      const cam = $("#g-cam"), nb = $("#g-nb"), cover = $("#g-cover"), stamp = $("#g-stampwrap"), cta2 = $("#g-cta2");
+      const cam = $("#g-cam"), nb = $("#g-nb"), cover = $("#g-cover"), root = $("#g-cam").parentNode;
+      const under = [...document.querySelectorAll("#g-nb > .g-stack"), $("#g-shadow"), $("#g-cover")];
+      const page = $("#g-page"), pagec = $("#g-pagecontent"), spiral = $("#g-spiral");
       const shade = $("#g-pageshade"), frontShade = $("#g-front-shade"), backShade = $("#g-back-shade");
-      const bleed = $("#g-bleed-d"), ink = $("#g-wm-ink");
+      const bleed = $("#g-bleed-d"), ink = $("#g-wm-ink"), penG = $("#g-pen");
       const writeE = K.ease("sine.inOut"), p4o = K.ease("power4.out");
-      K.ticker(tl, 4.0, (t) => {
+      K.ticker(tl, 4.4, (t) => {
         const tg = T0 + t;
-        // 18,0 : la plume part du point où l'encre s'est rétractée
-        const w = writeE(K.clamp(t / 1.15));
+        // 17,6 -> 18,0 : seule l'encre de la signature est posée sur la scène précédente ; puis la page redevient opaque
+        const op = t >= 0.4 ? 1 : 0;
+        root.style.background = op ? "#e4dccf" : "transparent";
+        page.style.background = op ? "#ede6da" : "transparent";
+        pagec.style.background = op ? "#ede6da" : "transparent";
+        spiral.style.opacity = K.tw(t, 0.4, 0.25, 0, 1).toFixed(3);
+        under.forEach((e) => (e.style.visibility = op ? "visible" : "hidden"));
+        // écriture (17,65 -> 18,85) ; l'esquisse au crayon la précède de 0,12 s puis s'efface sous l'encre
+        const w = writeE(K.clamp((t - 0.05) / 1.2)), wp = writeE(K.clamp((t + 0.07) / 1.2));
         for (const s of strokes) {
-          const k = K.clamp((w - s.a) / (s.b - s.a));
-          s.p.setAttribute("stroke-dashoffset", (s.L * (1 - k)).toFixed(2));
-          s.p.style.visibility = k > 0 ? "visible" : "hidden";
+          const k = K.clamp((w - s.a) / (s.b - s.a)), kp = K.clamp((wp - s.a) / (s.b - s.a));
+          s.m.setAttribute("stroke-dashoffset", (s.L * (1 - k)).toFixed(2));
+          s.m.style.visibility = k > 0 ? "visible" : "hidden";
+          s.p1.setAttribute("stroke-dashoffset", (s.L * (1 - kp)).toFixed(2)); s.p2.setAttribute("stroke-dashoffset", (s.L * (1 - kp)).toFixed(2));
+          s.p1.style.visibility = s.p2.style.visibility = kp > 0 ? "visible" : "hidden";
         }
+        penG.style.opacity = K.tw(t, 1.3, 0.35, 1, 0).toFixed(3);
         const b = 4 * (1 - K.clamp(t / 1.5));
         if (b > 0.05) { ink.setAttribute("filter", "url(#g-bleed)"); bleed.setAttribute("scale", b.toFixed(2)); } else ink.removeAttribute("filter");
         for (const o of ornEls) {
@@ -213,24 +218,23 @@
           if (o.kind === "dot") o.el.setAttribute("r", (o.r * k).toFixed(2));
           else { o.el.setAttribute("transform", `${o.tf} scale(${k.toFixed(3)})`); o.el.style.visibility = k > 0 ? "visible" : "hidden"; }
         }
-        cta2.style.setProperty("--w", K.tw(t, 1.2, 0.35, 0, 110, "power2.inOut").toFixed(2));
         // 19,8 : le sceau se tamponne (1.3 -> 1 en 0,15 s, léger écrasement), rotation −3°
-        const ts = t - 1.8;
-        let sc = 1.3, sqx = 1, sqy = 1, op = 0;
+        const ts = t - 2.2;
+        let sc = 1.3, sqx = 1, sqy = 1, so = 0;
         if (ts >= 0) {
           sc = K.tw(ts, 0, 0.15, 1.3, 1, "power4.in");
           const sq = ts < 0.15 ? 0 : Math.exp(-(ts - 0.15) * 22) * Math.cos((ts - 0.15) * 40);
           sqx = 1 + 0.035 * sq; sqy = 1 - 0.05 * sq;
-          op = K.tw(ts, 0, 0.06, 0, 1, "none");
+          so = K.tw(ts, 0, 0.06, 0, 1, "none");
         }
         stamp.style.transform = `rotate(-3deg) scale(${(sc * sqx).toFixed(4)}, ${(sc * sqy).toFixed(4)})`;
-        stamp.style.opacity = op.toFixed(3);
+        stamp.style.opacity = so.toFixed(3);
 
         // 21,0 : recul vers le carnet (échelle 1,15 = première image), la couverture se referme depuis la gauche
-        const zoom = t < 3.0 ? 1080 / 640 : K.tw(t, 3.0, 0.6, 1080 / 640, 1.15, "expo.inOut");
+        const zoom = t < 3.4 ? 1080 / 640 : K.tw(t, 3.4, 0.6, 1080 / 640, 1.15, "expo.inOut");
         K.applyCam(cam, tg, zoom);
         nb.style.transform = "scale(1)";
-        const a = K.tw(t, 3.32, 0.56, 180, 0, "power3.inOut");
+        const a = K.tw(t, 3.72, 0.56, 180, 0, "power3.inOut");
         cover.style.transform = `rotateY(${(-a).toFixed(3)}deg)`;
         const rad = (a * Math.PI) / 180;
         const c = Math.max(0, Math.cos(rad));

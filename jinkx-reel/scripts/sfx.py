@@ -115,29 +115,48 @@ def swell(dur, rev=False):  # aspiration / révélation à l'encre
     return s[::-1] if rev else s
 
 
-# --- placement (temps du film, V2) ---
-place(flap(0.4, 2200), 0.3, 0.55, -0.3)        # la couverture s'ouvre (avant 0,5 s)
+# --- placement (temps du film, V3) ---
+def rub(n_pass, dur, seed):  # gomme : allers-retours rapides
+    out = np.zeros(int(dur * SR))
+    seg = len(out) // n_pass
+    for k in range(n_pass):
+        sc = scratch(seg / SR, seed + k, rate=20)
+        out[k * seg:k * seg + len(sc)] += sc * (0.8 + 0.2 * (k % 2))
+    return out / (np.abs(out).max() + 1e-9)
+place(flap(0.4, 2200), 0.3, 0.55, -0.3)         # la couverture s'ouvre
 place(thump(70, 0.2), 0.62, 0.35, -0.4)
-place(swell(1.0), 1.4, 0.12)                    # la caméra plonge dans la page
-place(scratch(1.4, 1), 3.0, 0.20, 0.15)         # morph A : stylo
-place(swish(0.5), 5.4, 0.45, -0.2)              # tourne de page (feuille souple)
+place(swell(1.0), 1.4, 0.12)                     # la caméra plonge dans la page
+place(scratch(0.3, 7, 8), 2.7, 0.10, 0.1)        # lignes de construction au crayon
+place(scratch(1.4, 1), 3.0, 0.20, 0.15)          # morph A : encre
+place(rub(3, 0.35, 11), 4.4, 0.16, 0.1)          # coup de gomme
+place(swish(0.5), 5.4, 0.45, -0.2)               # tourne de page
 place(thump(110, 0.12), 5.9, 0.28, -0.1)
-place(swish(0.55, 900, 6000), 5.9, 0.16, 0.25)  # l'éventail s'ouvre
-place(scratch(1.2, 2), 6.6, 0.20, 0.2)          # morph B : crayon
-place(swell(0.5), 7.9, 0.18)                    # plongée dans le rivet
-place(swish(0.7, 120, 1400), 8.4, 0.30)         # l'encre se dissout dans l'eau
-place(machine(2.3), 8.6, 0.30, 0.25)            # machine à tatouer
+place(swish(0.5, 900, 6000), 5.9, 0.14, 0.25)    # l'éventail s'ouvre
+place(swish(0.4, 600, 4000), 6.4, 0.22, 0.3)     # le papier calque glisse
+place(scratch(0.3, 8, 8), 6.8, 0.10, 0.1)        # arcs de construction
+place(scratch(0.9, 2), 6.95, 0.20, 0.2)          # flash B sur le calque
+place(rub(3, 0.3, 21), 7.7, 0.16, 0.1)           # gomme
+place(swish(0.3, 500, 3500), 7.9, 0.18, 0.2)     # le calque se soulève
+place(tick(), 8.1, 0.25)                         # coupe sur le flash seul
+place(swish(0.6, 120, 1400), 8.4, 0.30)          # l'encre se dissout
+place(machine(1.95), 9.0, 0.30, 0.25)            # machine à tatouer (vase)
 for k, at in enumerate([11.4, 11.7, 12.0, 12.3, 12.6, 12.9]):
-    place(tick(), at, 0.35, (-1) ** k * 0.3)    # match cuts
-place(swish(0.6, 200, 2200), 13.2, 0.25, 0.1)   # le vase s'efface, les herbes restent
-place(scratch(0.8, 5, 9), 13.25, 0.10, -0.1)    # la silhouette du bras se trace
-place(scratch(1.0, 3, 14), 14.0, 0.14, 0.1)     # tatouage sur la peau
-place(swish(0.6, 300, 2500), 15.6, 0.32, -0.25) # la caméra glisse, le tirage arrive
+    place(tick(), at, 0.35, (-1) ** k * 0.3)     # match cuts
+place(swish(0.6, 200, 2200), 13.2, 0.25, 0.1)    # le vase s'efface, les herbes restent
+place(scratch(0.8, 5, 9), 13.25, 0.10, -0.1)     # silhouette du bras
+place(swish(0.25, 300, 1500), 14.0, 0.16)        # le stencil est posé
+place(machine(1.2), 14.2, 0.28, 0.2)             # la machine repasse le stencil
+for k in range(4):
+    place(tick(), 15.15 + 0.15 * k, 0.12, 0.2)   # points tapés
+place(swish(0.35, 250, 1800), 15.25, 0.20, -0.1) # essuyage
+place(swish(0.6, 300, 2500), 15.6, 0.32, -0.25)  # la caméra glisse, le tirage arrive
 place(thump(140, 0.08), 16.2, 0.18)
-place(swell(0.6), 17.4, 0.25)                   # l'encre se rétracte vers la plume
-place(scratch(1.15, 4, 9), 18.0, 0.20, -0.1)    # « Jinkx » s'écrit
-place(thump(85, 0.22), 19.95, 0.75)             # le tampon : « tok » sourd
-place(flap(0.45, 1800), 21.32, 0.45, -0.35)     # la couverture se referme
+place(swish(0.5, 300, 2500), 17.5, 0.26, 0.2)    # le tirage sort du cadre
+place(scratch(0.3, 9, 8), 17.6, 0.08, -0.1)      # esquisse au crayon
+place(scratch(1.2, 4, 9), 17.65, 0.20, -0.1)     # « Jinkx » s'écrit
+place(scratch(0.3, 10, 16), 19.2, 0.08)          # « TATTOO » imprimé
+place(thump(85, 0.22), 19.95, 0.75)              # le tampon : « tok » sourd
+place(flap(0.45, 1800), 21.32, 0.45, -0.35)      # la couverture se referme
 place(thump(65, 0.25), 21.86, 0.5, -0.2)
 
 mix = np.stack([L, R], 1)

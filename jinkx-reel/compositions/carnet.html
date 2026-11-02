@@ -1,6 +1,7 @@
 <template>
   <style>
     @font-face { font-family: "Cormorant Garamond"; font-style: italic; font-weight: 500; src: url("assets/fonts/CormorantGaramond-MediumItalic.ttf"); }
+    @font-face { font-family: "IM Fell English SC"; font-style: normal; font-weight: 400; src: url("assets/fonts/IMFellEnglishSC-Regular.ttf"); }
     #root { position: absolute; inset: 0; overflow: hidden; background: #e4dccf; }
     #c-cam { position: absolute; inset: 0; transform-origin: 540px 960px; }
     #c-nb { position: absolute; inset: 0; transform-origin: 540px 960px; perspective: 2600px; perspective-origin: 540px 960px; }
@@ -21,8 +22,8 @@
     #c-front-sheen { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(237,230,218,0) 35%, rgba(237,230,218,0.07) 50%, rgba(237,230,218,0) 64%); }
     #c-back { transform: rotateY(180deg); background: #d9cfbf; }
     #c-back-shade { position: absolute; inset: 0; background: linear-gradient(270deg, rgba(18,17,16,0.35), rgba(18,17,16,0) 40%); opacity: 1; }
-    #c-label { position: absolute; left: 0; width: 100%; top: 1000px; text-align: center; font-family: "JetBrains Mono", monospace; font-weight: 500;
-      font-size: 24px; letter-spacing: 0.15em; color: rgba(217, 207, 191, 0.78); }
+    #c-label { position: absolute; left: 0; width: 100%; top: 990px; text-align: center; font-family: "IM Fell English SC", serif; font-weight: 400;
+      font-size: 31px; letter-spacing: 0.18em; padding-left: 0.18em; color: rgba(217, 207, 191, 0.8); filter: url(#ink-press); }
     #c-seal { position: absolute; left: 214px; top: 360px; width: 224px; height: 224px; }
     #c-spiral { left: 186px; top: 400px; width: 70px; height: 1120px; overflow: visible; }
   </style>
@@ -64,7 +65,7 @@
                 <text x="57" y="80" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="66" fill="#171615">J</text>
               </g>
             </svg>
-            <div id="c-label">SKETCHBOOK — 2026</div>
+            <div id="c-label">SKETCHBOOK · 2026</div>
             <div id="c-front-shade"></div>
           </div>
           <div id="c-back" class="c-face">
@@ -88,6 +89,7 @@
       const $ = (s) => document.querySelector(s);
       // spirale métal : anneaux sur le bord de reliure
       $("#c-spiral").innerHTML = K.spiralRings();
+      K.ensurePressFilter();
 
       const cam = $("#c-cam"), nb = $("#c-nb"), cover = $("#c-cover");
       const shade = $("#c-pageshade"), frontShade = $("#c-front-shade"), backShade = $("#c-back-shade");

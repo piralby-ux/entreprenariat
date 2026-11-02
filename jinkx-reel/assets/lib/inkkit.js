@@ -187,6 +187,58 @@
     return rings;
   };
 
+  /* V3 — micro-labels en IM Fell English SC : chaque lettre « se presse » comme un tampon */
+  K.pressIn = function (tl, spans, at, per = 0.03) {
+    spans.forEach((sp, i) => {
+      sp.style.display = 'inline-block';
+      tl.fromTo(sp, { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 0.05, ease: 'power2.out' }, at + i * per);
+    });
+  };
+  K.pressOut = function (tl, spans, at, dur = 0.15) {
+    tl.to(spans, { opacity: 0, duration: dur, ease: 'power2.in' }, at);
+  };
+  /* filtre d'impression au tampon (encre légèrement inégale), injecté une fois dans le document */
+  K.ensurePressFilter = function () {
+    if (document.getElementById('ink-press')) return;
+    const holder = document.createElementNS(NS, 'svg');
+    holder.setAttribute('width', '0'); holder.setAttribute('height', '0');
+    holder.style.position = 'absolute';
+    holder.innerHTML = `<filter id="ink-press" x="-5%" y="-20%" width="110%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="1" seed="19" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.4 1.55" result="ga"/>
+      <feComposite in="d" in2="ga" operator="in"/></filter>`;
+    document.body.appendChild(holder);
+  };
+
+  /* Trajectoire de l'aiguille (précalculée) : suit un trait jusqu'au bout, puis se lève et va au suivant. */
+  K.needlePath = function (tr, F0, F1, toScreen, rest) {
+    const N = Math.round((F1 - F0) * 30), traj = [], lift = [];
+    let lead = null, cur = null, hop = null;
+    for (let f = 0; f <= N; f++) {
+      const t = F0 + f / 30;
+      if (!lead || tr.progress(lead, t) >= 0.97) {
+        lead = null;
+        for (const it of tr.items) { const p = tr.progress(it, t); if (p > 0.02 && p < 0.9 && (!lead || it.L > lead.L)) lead = it; }
+      }
+      const target = lead ? toScreen(tr.head(lead, t)) : cur || toScreen(rest);
+      if (!cur) cur = target;
+      if (!hop && Math.hypot(target[0] - cur[0], target[1] - cur[1]) > 22) hop = { from: cur.slice(), k: 0 };
+      let lf = 0;
+      if (hop) {
+        hop.k++;
+        const u = hop.k / 5, e = K.smooth(Math.min(1, u));
+        cur = [hop.from[0] + (target[0] - hop.from[0]) * e, hop.from[1] + (target[1] - hop.from[1]) * e];
+        lf = Math.sin(Math.PI * Math.min(1, u));
+        if (u >= 1) hop = null;
+      } else cur = [cur[0] + (target[0] - cur[0]) * 0.6, cur[1] + (target[1] - cur[1]) * 0.6];
+      traj.push(cur.slice()); lift.push(lf);
+    }
+    const at = (arr, t) => { const u = K.clamp((t - F0) * 30, 0, N); const i = Math.floor(u), f = u - i; const a = arr[i], b = arr[Math.min(N, i + 1)]; return Array.isArray(a) ? [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f] : a + (b - a) * f; };
+    return { N, traj, lift, pos: (t) => at(traj, t), lift: (t) => at(lift, t), raw: lift };
+  };
+
   /* Un « ticker » : appelle fn(tLocal) à chaque seek, sur toute la durée de la scène. */
   K.ticker = function (tl, duration, fn) {
     const proxy = { t: 0 };

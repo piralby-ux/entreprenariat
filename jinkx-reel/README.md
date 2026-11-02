@@ -1,4 +1,4 @@
-# Jinkx Tatoo — « Du carnet à la peau »
+# Jinkx Tattoo — « Du carnet à la peau »
 
 Reel Instagram de lancement, réalisé avec **HyperFrames** (HTML + CSS + GSAP → MP4).
 1080 × 1920, 30 fps, 22 s, en boucle (la dernière image est la première : le carnet fermé).
