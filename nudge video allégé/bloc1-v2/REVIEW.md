@@ -1,3 +1,16 @@
+# REVIEW — bloc1-v2, révision 6 (snapshots, avant rendu)
+
+- Snapshots aux instants demandés (T0 = 15,58 s) : 15,28 · 15,63 · 16,08 · 17,08 · 18,08 · 19,08 ·
+  19,88 · 21,08 · 22,98. La horde se détache de la ville (silhouettes #0a0b0d, liseré orange/rose), le
+  tampon est net, aucun texte n'est couvert (ordre : ville < horde < interface).
+- Check : 0 erreur ; contraste 38/38. Avertissements restants voulus : chiffres qui défilent dans les
+  rouleaux (comme la machine à sous d'origine), fichiers longs et calques imbriqués (structure d'origine),
+  canvas plein cadre.
+- Sons d'avant 14,6 s identiques à l'original (vérifié clip par clip) ; ceux d'après décalés de +4,50 s.
+  Seuls changements voulus : riser coupé à 15,33 (micro-silence) et rouleaux à −6 dB pendant l'insert.
+- Écarts assumés : traversées de la horde raccourcies (voir SPEC, révision 6) ; aboiements non placés,
+  faute de banque joignable (instants prévus dans SFX.md).
+
 # REVIEW — Démineur urbain, révision 5 (avant rendu final)
 
 Brouillon d'écoute : `../draft-audio3.mp4` (15 i/s, image brouillon, son définitif).
