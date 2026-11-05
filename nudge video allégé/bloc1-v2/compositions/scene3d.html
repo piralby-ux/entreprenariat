@@ -1,0 +1,1330 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      background: #0a0b0d;
+      overflow: hidden;
+    }
+    #s3-canvas {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      display: block;
+    }
+  </style>
+  <div data-hf-id="hf-53lh"
+    id="root"
+    data-composition-id="scene3d"
+    data-start="0"
+    data-duration="23"
+    data-width="1920"
+    data-height="1080"
+  >
+    <canvas data-hf-id="hf-puoz" id="s3-canvas" class="clip" data-start="0" data-duration="23" data-track-index="0"></canvas>
+  </div>
+  <script>
+    (function () {
+      // ---------------------------------------------------------------------------
+      // Démineur urbain — one 15.5 s crane shot. Contract: render(t) is a pure function
+      // of t. Everything time-dependent is precomputed at build into arrays; render(t)
+      // only reads them. The clock is the hf-seek event, never GSAP, never rAF.
+      // ---------------------------------------------------------------------------
+      // SH: the frozen beat after the step, where the 2D counter slams 0 → 1 (index.html).
+      // Everything after the impact runs SH seconds later than in the 14 s cut. The last 3 s
+      // hold on the city under the « 5 tonnes » card (index.html).
+      const W = 1920, H = 1080, SH = 1.5, DUR = 23.0;
+      // bloc1-v2: a 4.5 s beat is inserted at INS = 14.6 s of the 18.5 s cut (the 2D and the sound after it
+      // move by DELTA; the 3D does not, it is the one continuous shot). T0: the « INDICE N°1 » stamp lands;
+      // T_HIT: the weight hits (15.48 + DELTA).
+      const INS = 14.6, DELTA = 4.5, T0 = 15.58, T_HIT = 19.98;
+      window.__hf = window.__hf || {};
+      window.__hf.buildReady = window.__hf.buildReady || {};
+      let resolveBuild;
+      window.__hf.buildReady["scene3d"] = new Promise((r) => (resolveBuild = r));
+
+      const api = { render: null, count: () => 1, t: 0 };
+      window.__demineur = api;
+      window.addEventListener("hf-seek", (e) => {
+        api.t = e.detail.time;
+        if (api.render) api.render(api.t);
+      });
+
+      // Placeholder clock so the runtime sees a 14 s composition; the 3D never reads it.
+      const tl = gsap.timeline({ paused: true });
+      tl.to({ v: 0 }, { v: 1, duration: DUR, ease: "none" }, 0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["scene3d"] = tl;
+
+      // three.js 0.184.0, the same build the first cut loaded from jsDelivr, kept in the project
+      import("./assets/vendor/three/three.module.min.js")
+        .then((THREE) => build(THREE))
+        .catch((err) => console.error("[scene3d] build failed", err))
+        .finally(() => resolveBuild());
+
+      async function build(THREE) {
+        // ----------------------------------------------------------------- utils
+        const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+        const sat01 = (x) => clamp(x, 0, 1);
+        const lerp = (a, b, k) => a + (b - a) * k;
+        const ease = {
+          p2out: (x) => 1 - (1 - x) * (1 - x),
+          p2in: (x) => x * x,
+          p2inOut: (x) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2),
+          p3inOut: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
+          p3out: (x) => 1 - Math.pow(1 - x, 3),
+          sineIn: (x) => 1 - Math.cos((x * Math.PI) / 2),
+          sineInOut: (x) => -(Math.cos(Math.PI * x) - 1) / 2,
+          backOut: (s) => (x) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2),
+        };
+        const DEG = Math.PI / 180;
+        function mulberry32(a) {
+          return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        // Same integer hash as the GLSL hash2() in the far-field shader.
+        function hash2(i, k) {
+          const qx = (i + 32768) >>> 0, qy = (k + 32768) >>> 0;
+          let h = (Math.imul(qx, 1597334677) ^ Math.imul(qy, 3812015801)) >>> 0;
+          h = Math.imul(h ^ (h >>> 16), 2246822519) >>> 0;
+          h = (h ^ (h >>> 13)) >>> 0;
+          return h / 4294967295;
+        }
+        const C = (hex) => new THREE.Color(hex);
+        const PAL = {
+          concrete: C("#b8ac9a"), sun: C("#ffb866"), shadow: C("#2e3b52"), grey: C("#c0c0c0"),
+          // brown lifted from #6b3f1d: under the game light the darker one read as black
+          red: C("#e8352a"), brown: C("#8a5326"), void: C("#0a0b0d"), rim: C("#4a6fa5"),
+          engine: C("#fff3e6"),
+          // sunset sky
+          skyHorizon: C("#ff8a2a"), skyPink: C("#ff5d8f"), skyTop: C("#2a3a8f"),
+          // game: a cell's colour says how many poops touch it (the numbers, without numbers)
+          safeA: C("#3a86ff"), safeB: C("#2ec4b6"), safeC: C("#8a5cf6"), // 0, by district
+          d1: C("#ffd23f"), d2: C("#ff8c42"), d3: C("#ff3c38"), mineTile: C("#f1e7d6"),
+        };
+
+        // ------------------------------------------------------------ the board
+        const P = 0.62, SLAB = 0.6;
+        const IMPACT_Z = -4.65;
+        const cellX = (gi) => gi * P;
+        const cellZ = (gk) => IMPACT_Z - gk * P;
+        const N = 200, HALF = 100; // gi, gk in [-100, 99]
+        const idx = (gi, gk) => (gi + HALF) * N + (gk + HALF);
+        const isSidewalk = (gi, gk) => gi >= -4 && gi <= 4 && gk >= -12 && gk <= 84;
+        const isNear = (gi, gk) => gi >= -4 && gi <= 4 && gk >= -7 && gk <= 8;
+        const inRing = (gi, gk) => gi >= -5 && gi <= 5 && gk >= -8 && gk <= 9;
+        // strip rectangle (the original sidewalk), for the act-5 growth front
+        const STRIP = { x0: -2.79, x1: 2.79, z0: -57.04, z1: 3.1 };
+        const stripDist = (x, z) => {
+          const dx = Math.max(STRIP.x0 - x, 0, x - STRIP.x1);
+          const dz = Math.max(STRIP.z0 - z, 0, z - STRIP.z1);
+          return Math.hypot(dx, dz);
+        };
+
+        // Near-field mines: 14 cells placed along an elliptical spiral from the impact,
+        // so the pop order (by spiral rank) traces a path the eye can follow.
+        const mine = new Uint8Array(N * N);
+        let nearMines = null;
+        for (let seed = 0xd3417e; seed < 0xd3417e + 800 && !nearMines; seed++) {
+          const rnd = mulberry32(seed);
+          const theta0 = rnd() * Math.PI * 2;
+          const list = [];
+          const used = new Set(["0,0"]);
+          let ok = true;
+          for (let i = 0; i < 14; i++) {
+            const th = theta0 + i * (0.92 + rnd() * 0.12);
+            const r = 1.5 + i * 0.5 + rnd() * 0.3;
+            const gi = Math.round(r * Math.cos(th) * 0.5);
+            const gk = Math.round(r * Math.sin(th) * 0.95 + 0.4);
+            const key = gi + "," + gk;
+            if (!isNear(gi, gk) || used.has(key)) { ok = false; break; }
+            used.add(key);
+            list.push([gi, gk]);
+          }
+          if (!ok) continue;
+          const all = [[0, 0], ...list];
+          const m = new Set(all.map(([a, b]) => a + "," + b));
+          let max = 0, threes = 0;
+          for (let gi = -4; gi <= 4; gi++)
+            for (let gk = -7; gk <= 8; gk++) {
+              if (m.has(gi + "," + gk)) continue;
+              let c = 0;
+              for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) if (m.has(gi + a + "," + (gk + b))) c++;
+              max = Math.max(max, c);
+              if (c === 3) threes++;
+            }
+          if (max <= 3 && threes >= 1) nearMines = list;
+        }
+        if (!nearMines) throw new Error("no near-field board satisfied the constraints");
+        mine[idx(0, 0)] = 2; // the stepped-on one
+        nearMines.forEach(([gi, gk]) => (mine[idx(gi, gk)] = 1));
+        const FAR_DENSITY = 0.12;
+        for (let gi = -HALF; gi < HALF; gi++)
+          for (let gk = -HALF; gk < HALF; gk++) {
+            if (inRing(gi, gk)) continue;
+            if (hash2(gi, gk) < FAR_DENSITY) mine[idx(gi, gk)] = 1;
+          }
+
+        // ------------------------------------------------------------ camera path
+        const VFOV = (2 * Math.atan(Math.tan(27 * DEG) / (W / H))) / DEG; // 54° horizontal
+        const CAM = { x0: 0.18, vx: 0, y0: 0.28, z0: 0.52, zStop: -3.4, craneY: 14, craneZ: 5.6 };
+        const xStop = CAM.x0 - CAM.vx * 2.6 - CAM.vx * 0.4 + 0.5 * (CAM.vx / 0.4) * 0.16;
+        const T_CRANE = 3.2 + SH, T_CRANE_END = 6.5 + SH; // crane 3.3 s, power3.inOut
+        const RISE = { t0: 10.5 + SH, t1: 12.8 + SH, y0: 15.2, y1: 160, p0: -58, p1: -42 };
+        const creepEnd = { y: 15.2, z: 6.35 };
+        const groundZ = creepEnd.z - creepEnd.y / Math.tan(58 * DEG);
+        function camPose(t) {
+          let x = CAM.x0, y = CAM.y0, z, pitch = 2, roll = 0;
+          if (t < 2.6) {
+            x = CAM.x0 - CAM.vx * t;
+            z = CAM.z0 - 1.4 * t;
+            y += 0.008 * Math.sin(2 * Math.PI * 1.9 * t);
+            roll = 0.35 * Math.sin(Math.PI * 1.9 * t);
+          } else if (t < 3.0) {
+            const tau = t - 2.6;
+            z = CAM.z0 - 1.4 * 2.6 - 1.4 * tau + 0.5 * 3.5 * tau * tau;
+            x = CAM.x0 - CAM.vx * 2.6 - CAM.vx * tau + 0.5 * (CAM.vx / 0.4) * tau * tau;
+            const fade = 1 - tau / 0.4;
+            y += 0.008 * Math.sin(2 * Math.PI * 1.9 * t) * fade;
+            roll = 0.35 * Math.sin(Math.PI * 1.9 * t) * fade;
+          } else if (t < T_CRANE) {
+            x = xStop;
+            z = CAM.zStop;
+          } else if (t < T_CRANE_END) {
+            const e = ease.p3inOut((t - T_CRANE) / (T_CRANE_END - T_CRANE));
+            x = lerp(xStop, 0, e);
+            y = lerp(CAM.y0, CAM.craneY, e);
+            z = lerp(CAM.zStop, CAM.craneZ, e);
+            pitch = lerp(2, -58, e);
+          } else if (t < RISE.t0) {
+            const e = ease.sineIn((t - T_CRANE_END) / (RISE.t0 - T_CRANE_END));
+            x = 0;
+            y = lerp(CAM.craneY, creepEnd.y, e);
+            z = lerp(CAM.craneZ, creepEnd.z, e);
+            pitch = -58;
+          } else {
+            const u = sat01((t - RISE.t0) / (RISE.t1 - RISE.t0));
+            const e = ease.p3inOut(u);
+            const hold = Math.max(0, t - RISE.t1);
+            // bloc1-v2: the climb keeps going through the inserted beat (+3.5 % height, never still),
+            // and the weight's hit pulls the camera back 3 % to widen the frame (Toulouse → France)
+            const climb = 0.035 * ease.sineInOut(sat01((t - INS) / DELTA));
+            const recoil = Math.log(1 + 0.03 * ease.p3out(sat01((t - T_HIT) / 0.3)));
+            const ly = lerp(Math.log(RISE.y0), Math.log(RISE.y1), e) + Math.log(1 + 0.005 * hold) + climb + recoil;
+            x = 0;
+            y = Math.exp(ly);
+            pitch = lerp(RISE.p0, RISE.p1, e);
+            z = groundZ + y / Math.tan(-pitch * DEG);
+          }
+          // impact shake: ±2° damped over 3 frames
+          if (t >= 3.0 && t < 3.0 + 4 / 30) {
+            const k = (t - 3.0) * 30;
+            const a = 2 * Math.cos(Math.PI * Math.floor(k)) * Math.exp(-Math.floor(k) / 1.1);
+            pitch += a;
+            roll += a * 0.7;
+          }
+          // the stamp's hit: ±1.2° damped to nothing over 0.25 s
+          if (t >= T0 && t < T0 + 0.25) {
+            const u = (t - T0) / 0.25;
+            const a = 1.2 * Math.cos(2 * Math.PI * 12 * (t - T0)) * (1 - u) * (1 - u);
+            pitch += a;
+            roll += a * 0.7;
+          }
+          return { x, y, z, pitch, roll, fov: VFOV };
+        }
+
+        // Act-5 growth front, measured from the strip. Tabulated once, inverted by search.
+        const FRONT_DT = 1 / 600;
+        const frontT = [], frontR = [];
+        for (let t = RISE.t0; t <= DUR + 1e-9; t += FRONT_DT) {
+          frontT.push(t);
+          frontR.push(Math.max(0, 2.2 * (camPose(t).y - RISE.y0) + 5 * (t - RISE.t0)));
+        }
+        function tRise(d) {
+          if (d <= 0) return RISE.t0;
+          if (d > frontR[frontR.length - 1]) return Infinity;
+          let lo = 0, hi = frontR.length - 1;
+          while (hi - lo > 1) { const m = (lo + hi) >> 1; if (frontR[m] < d) lo = m; else hi = m; }
+          const r0 = frontR[lo], r1 = frontR[hi];
+          return lerp(frontT[lo], frontT[hi], r1 > r0 ? (d - r0) / (r1 - r0) : 0);
+        }
+        const BAND = 4;
+        const bandPop = (d, h) => tRise(Math.ceil(Math.max(d, 0.01) / BAND) * BAND) + 0.35 + 0.25 * h;
+
+        // ------------------------------------------------------------ renderer
+        const canvas = document.getElementById("s3-canvas");
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true, powerPreference: "high-performance" });
+        renderer.setPixelRatio(1);
+        renderer.setSize(W, H, false);
+        renderer.toneMapping = THREE.NoToneMapping;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+        renderer.localClippingEnabled = true;
+        renderer.autoClear = true;
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(PAL.void.clone(), 1e4, 2e4);
+        const camera = new THREE.PerspectiveCamera(VFOV, W / H, 0.05, 3000);
+        camera.rotation.order = "YXZ";
+
+        // environment: dark studio, three strips; rotated (not the objects) so highlights sweep
+        {
+          const pm = new THREE.PMREMGenerator(renderer);
+          const studio = new THREE.Scene();
+          studio.background = new THREE.Color(0.012, 0.012, 0.014);
+          const strip = (w, h, pos, col, k) => {
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: col.clone().multiplyScalar(k), side: THREE.DoubleSide }));
+            m.position.set(...pos);
+            m.lookAt(0, 0, 0);
+            studio.add(m);
+          };
+          strip(14, 1.6, [-2, 0.6, -9], PAL.sun, 3.0);
+          strip(6, 4, [0, 9, 1], new THREE.Color(1, 1, 1), 1.6);
+          strip(1.4, 8, [8, 2, 3], PAL.rim, 2.2);
+          scene.environment = pm.fromScene(studio, 0.03).texture;
+          scene.environmentIntensity = 0.5;
+          pm.dispose();
+        }
+
+        // lights
+        const key = new THREE.DirectionalLight(PAL.sun.clone(), 3.2);
+        key.castShadow = true;
+        key.shadow.mapSize.set(4096, 4096);
+        key.shadow.bias = -0.0004;
+        key.shadow.normalBias = 0.025;
+        scene.add(key, key.target);
+        const rim = new THREE.DirectionalLight(PAL.rim.clone(), 1.1);
+        rim.position.set(-6, 7, -9);
+        scene.add(rim, rim.target);
+        const dirSun = new THREE.Vector3(-Math.sin(12 * DEG) * Math.cos(8 * DEG), Math.sin(8 * DEG), -Math.cos(12 * DEG) * Math.cos(8 * DEG)).normalize();
+        const dirEngine = new THREE.Vector3(-Math.sin(35 * DEG) * Math.cos(52 * DEG), Math.sin(52 * DEG), -Math.cos(35 * DEG) * Math.cos(52 * DEG)).normalize();
+
+        // shared material patches -------------------------------------------------
+        // mask: poop and the detonation outline write alpha 0 → they keep full saturation
+        const maskPatch = (mat) => {
+          const prev = mat.onBeforeCompile;
+          mat.onBeforeCompile = (sh, r) => {
+            if (prev) prev(sh, r);
+            sh.fragmentShader = sh.fragmentShader.replace("#include <dithering_fragment>", "#include <dithering_fragment>\n gl_FragColor.a = 0.0;");
+          };
+          mat.customProgramCacheKey = () => "mask" + (prev ? "+p" : "");
+          return mat;
+        };
+
+        // ------------------------------------------------------------ sky
+        const skyU = { uSun: { value: dirSun.clone() }, uVoid: { value: 0 }, uHorizon: { value: PAL.skyHorizon.clone() }, uPink: { value: PAL.skyPink.clone() }, uTop: { value: PAL.skyTop.clone() }, uVoidCol: { value: PAL.void.clone() } };
+        const sky = new THREE.Mesh(
+          new THREE.SphereGeometry(1500, 48, 24),
+          new THREE.ShaderMaterial({
+            uniforms: skyU, side: THREE.BackSide, depthWrite: false, fog: false,
+            vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+            fragmentShader: `uniform vec3 uSun,uHorizon,uPink,uTop,uVoidCol; uniform float uVoid; varying vec3 vDir;
+              void main(){ vec3 d=normalize(vDir); float h=d.y;
+                // orange horizon → pink band → deep blue zenith
+                vec3 c = mix(uHorizon*1.6, uPink*1.1, smoothstep(0.0,0.14,h));
+                c = mix(c, uTop*0.9, smoothstep(0.1,0.45,h));
+                float s=max(dot(d,uSun),0.0);
+                c += uHorizon*(pow(s,7.0)*1.4 + pow(s,60.0)*3.0) + vec3(1.0,0.82,0.55)*smoothstep(0.99955,0.9998,s)*28.0;
+                c = mix(c, uHorizon*0.25, smoothstep(0.0,-0.08,h));
+                c = mix(c, uVoidCol, uVoid);
+                gl_FragColor = vec4(c,1.0); }`,
+          }),
+        );
+        sky.renderOrder = -10;
+        sky.frustumCulled = false;
+        scene.add(sky);
+
+        // ------------------------------------------------------------ the world (not sidewalk)
+        const world = []; // {obj, solid, d}
+        const wireMat = new THREE.MeshBasicMaterial({ color: PAL.grey.clone().multiplyScalar(0.75), wireframe: true, transparent: true, opacity: 1, fog: false, depthWrite: false });
+        const addWorld = (mesh, cast = true) => {
+          mesh.castShadow = cast;
+          mesh.receiveShadow = true;
+          scene.add(mesh);
+          const p = new THREE.Vector3();
+          mesh.getWorldPosition(p);
+          world.push({ obj: mesh, solid: mesh.material, cast, d: Math.hypot(p.x, p.z - IMPACT_Z) });
+          return mesh;
+        };
+        const std = (col, rough = 0.7, extra = {}) => new THREE.MeshStandardMaterial({ color: col, roughness: Math.max(0.45, rough), metalness: 0, ...extra });
+        const zMid = (STRIP.z0 + STRIP.z1) / 2, zLen = STRIP.z1 - STRIP.z0;
+
+        // kerb, gutter, road
+        { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.15, zLen, 1, 1, 30), std(PAL.concrete.clone().multiplyScalar(0.82), 0.6)); m.position.set(2.87, -0.075, zMid); addWorld(m); }
+        { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.35, zLen, 1, 30), std(PAL.concrete.clone().multiplyScalar(0.4), 0.6)); m.rotation.x = -Math.PI / 2; m.position.set(3.13, -0.148, zMid); addWorld(m, false); }
+        { const m = new THREE.Mesh(new THREE.PlaneGeometry(26, 140, 13, 50), std(PAL.shadow.clone().multiplyScalar(0.35), 0.75)); m.rotation.x = -Math.PI / 2; m.position.set(16.3, -0.15, -40); addWorld(m, false); }
+        // low wall + railing on the left
+        { const m = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, zLen, 1, 2, 30), std(PAL.concrete.clone().multiplyScalar(0.7), 0.65)); m.position.set(-2.96, 0.45, zMid); addWorld(m); }
+        { const m = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, zLen, 1, 1, 30), std(PAL.shadow.clone().multiplyScalar(0.6), 0.5)); m.position.set(-2.96, 1.7, zMid); addWorld(m); }
+        {
+          const n = Math.floor(zLen / 0.15);
+          const m = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.009, 0.009, 0.8, 6), std(PAL.shadow.clone().multiplyScalar(0.6), 0.5), n);
+          const mm = new THREE.Matrix4();
+          for (let i = 0; i < n; i++) { mm.makeTranslation(-2.96, 1.3, STRIP.z1 - 0.1 - i * 0.15); m.setMatrixAt(i, mm); }
+          m.position.set(0, 0, 0);
+          addWorld(m);
+          world[world.length - 1].d = 3;
+        }
+        // lampposts on the wall side; the one at z=-15.95 lays its shadow across the impact slab
+        [-0.95, -15.95, -30.95, -45.95].forEach((z) => {
+          const g = new THREE.Group();
+          const mat = std(PAL.shadow.clone().multiplyScalar(0.55), 0.5);
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.065, 4.2, 10), mat); pole.position.y = 2.1;
+          const arm = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.05, 0.05), mat); arm.position.set(0.42, 4.15, 0);
+          const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, 0.2), mat); head.position.set(0.8, 4.1, 0);
+          [pole, arm, head].forEach((p) => { p.position.x += -2.45; p.position.z += z; addWorld(p); });
+        });
+        // trees across the kerb, facades across the street
+        for (let i = 0; i < 8; i++) {
+          const z = 1 - i * 9;
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 5.0, 8), std(PAL.shadow.clone().multiplyScalar(0.4), 0.8));
+          trunk.position.set(5.4, 2.35, z); addWorld(trunk);
+          // bare pollarded trunks: any row of dark crowns stacks into a giant-poop silhouette in
+          // this low perspective and gives the gag away before the step
+          const knob = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), std(PAL.shadow.clone().multiplyScalar(0.4), 0.8));
+          knob.position.set(5.4, 4.9, z); addWorld(knob);
+        }
+        {
+          const rnd = mulberry32(77);
+          for (let i = 0; i < 9; i++) {
+            const h = 9 + rnd() * 10, len = 11 + rnd() * 4;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(10, h, len, 3, 5, 4), std(PAL.concrete.clone().multiplyScalar(0.36 + rnd() * 0.08), 0.75));
+            b.position.set(22, h / 2 - 0.15, 8 - i * 13.5);
+            addWorld(b);
+          }
+          const g = new THREE.Mesh(new THREE.PlaneGeometry(14, 140, 7, 50), std(PAL.concrete.clone().multiplyScalar(0.3), 0.8));
+          g.rotation.x = -Math.PI / 2; g.position.set(-10.1, -0.01, -40); addWorld(g, false);
+        }
+
+        // mortar under the sidewalk joints (goes to void with the world)
+        const mortarMat = std(PAL.concrete.clone().multiplyScalar(0.3), 0.9);
+        const mortar = new THREE.Mesh(new THREE.PlaneGeometry(STRIP.x1 - STRIP.x0, zLen), mortarMat);
+        mortar.rotation.x = -Math.PI / 2;
+        mortar.position.set(0, -0.069, zMid);
+        mortar.receiveShadow = true;
+        scene.add(mortar);
+
+        // ------------------------------------------------------------ slabs (all 200×200 cells)
+        const slabGeo = (() => {
+          const s = SLAB / 2 - 0.015;
+          const sh = new THREE.Shape();
+          sh.moveTo(-s, -s); sh.lineTo(s, -s); sh.lineTo(s, s); sh.lineTo(-s, s); sh.lineTo(-s, -s);
+          const g = new THREE.ExtrudeGeometry(sh, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 1, curveSegments: 1 });
+          g.rotateX(-Math.PI / 2);
+          g.translate(0, -0.055, 0);
+          g.computeVertexNormals(); // non-indexed already → flat facets, so the chamfer catches light on its own
+          return g;
+        })();
+        const slabMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0 });
+        slabMat.onBeforeCompile = (sh) => {
+          sh.vertexShader = sh.vertexShader
+            .replace("#include <common>", "#include <common>\nvarying vec3 vWp;")
+            .replace("#include <fog_vertex>", "#include <fog_vertex>\n vWp = (modelMatrix * instanceMatrix * vec4(transformed,1.0)).xyz;");
+          sh.fragmentShader = sh.fragmentShader
+            .replace("#include <common>", "#include <common>\nvarying vec3 vWp;\nfloat h21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }")
+            .replace("#include <color_fragment>", `#include <color_fragment>
+              float satv = max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b)) - min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b));
+              float conc = smoothstep(0.03, 0.09, satv);
+              float sp = h21(floor(vWp.xz*95.0)) - 0.5;
+              float blot = h21(floor(vWp.xz*7.0)) - 0.5;
+              diffuseColor.rgb *= 1.0 + conc*(sp*0.16 + blot*0.07);`);
+        };
+        slabMat.customProgramCacheKey = () => "slab";
+        const cells = []; // [gi, gk] for each instance
+        for (let gi = -HALF; gi < HALF; gi++) for (let gk = -HALF; gk < HALF; gk++) cells.push([gi, gk]);
+        const NC = cells.length;
+        const slabs = new THREE.InstancedMesh(slabGeo, slabMat, NC);
+        slabs.castShadow = true; slabs.receiveShadow = true; slabs.frustumCulled = false;
+        slabs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        slabs.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(NC * 3), 3);
+        slabs.instanceColor.setUsage(THREE.DynamicDrawUsage);
+        scene.add(slabs);
+        const sKind = new Uint8Array(NC), sT = new Float32Array(NC), sX = new Float32Array(NC), sZ = new Float32Array(NC), sVar = new Float32Array(NC);
+        const svRnd = mulberry32(911);
+        for (let i = 0; i < NC; i++) {
+          const [gi, gk] = cells[i];
+          sX[i] = cellX(gi); sZ[i] = cellZ(gk);
+          sVar[i] = 0.93 + svRnd() * 0.13;
+          if (isSidewalk(gi, gk)) { sKind[i] = 1; sT[i] = T_CRANE + Math.hypot(sX[i], sZ[i] - IMPACT_Z) / 11; }
+          else { sKind[i] = 0; sT[i] = tRise(stripDist(sX[i], sZ[i])); }
+        }
+        const slabTopSidewalk = (t, tw) => 0.07 * ease.backOut(1.4)(sat01((t - tw) / 0.3)) * (t > tw ? 1 : 0);
+
+        // game colour of every cell: the Minesweeper number told as a colour. 0 → a cool hue
+        // that changes by 24-cell district, 1 yellow, 2 orange, 3+ red; mine cells cream,
+        // the stepped-on cell red. Must match cellCol() in the far-plane shader.
+        const isMineAt = (gi, gk) => (gi >= -HALF && gi < HALF && gk >= -HALF && gk < HALF ? mine[idx(gi, gk)] > 0 : hash2(gi, gk) < FAR_DENSITY);
+        const sGame = new Float32Array(NC * 3);
+        const sMine = new Uint8Array(NC); // mine cells stay bright when the city calms down (calmCol)
+        for (let i = 0; i < NC; i++) {
+          const [gi, gk] = cells[i];
+          let col;
+          if (gi === 0 && gk === 0) col = PAL.red;
+          else if (mine[idx(gi, gk)]) { col = PAL.mineTile; sMine[i] = 1; }
+          else {
+            let n = 0;
+            for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) if ((a || b) && isMineAt(gi + a, gk + b)) n++;
+            if (n === 0) { const dh = hash2(Math.floor(gi / 24) + 5000, Math.floor(gk / 24) + 7000); col = dh < 1 / 3 ? PAL.safeA : dh < 2 / 3 ? PAL.safeB : PAL.safeC; }
+            else col = n === 1 ? PAL.d1 : n === 2 ? PAL.d2 : PAL.d3;
+          }
+          sGame[i * 3] = col.r; sGame[i * 3 + 1] = col.g; sGame[i * 3 + 2] = col.b;
+        }
+
+        // ------------------------------------------------------------ poops
+        function poopGeometry(seg) {
+          const prof = [[0, 0], [0.118, 0], [0.134, 0.018], [0.132, 0.04], [0.112, 0.058], [0.088, 0.064], [0.1, 0.078], [0.098, 0.098], [0.076, 0.112], [0.06, 0.118], [0.068, 0.13], [0.062, 0.148], [0.042, 0.16], [0.024, 0.172], [0.009, 0.188], [0, 0.194]]
+            .map(([x, y]) => new THREE.Vector2(x, y));
+          const g = new THREE.LatheGeometry(prof, seg);
+          const p = g.attributes.position;
+          for (let i = 0; i < p.count; i++) {
+            const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+            const th = Math.atan2(z, x);
+            const k = 1 + 0.07 * Math.sin(th - y * 55);
+            p.setXYZ(i, x * k + 0.55 * y * y, y, z * k);
+          }
+          g.computeVertexNormals();
+          return g;
+        }
+        const clipTop = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.0695);
+        const poopMat = maskPatch(new THREE.MeshPhysicalMaterial({ color: PAL.brown.clone(), roughness: 0.45, clearcoat: 0.55, clearcoatRoughness: 0.45, clippingPlanes: [clipTop], clipShadows: true }));
+        const poopMatFree = maskPatch(new THREE.MeshPhysicalMaterial({ color: PAL.brown.clone(), roughness: 0.45, clearcoat: 0.55, clearcoatRoughness: 0.45 }));
+
+        // AO contact disc texture
+        const aoTex = (() => {
+          const c = document.createElement("canvas"); c.width = c.height = 128;
+          const g = c.getContext("2d"); const gr = g.createRadialGradient(64, 64, 8, 64, 64, 64);
+          gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(0.45, "rgba(0,0,0,0.75)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+          g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+          const t = new THREE.CanvasTexture(c); return t;
+        })();
+        const aoMat = new THREE.MeshBasicMaterial({ map: aoTex, color: 0x000000, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+        const aoGeo = new THREE.PlaneGeometry(0.42, 0.42); aoGeo.rotateX(-Math.PI / 2);
+
+        // all popping mines (near spiral + far bands), one instanced mesh
+        const pops = []; // {x, z, t, yaw, s}
+        {
+          const spiral = nearMines.map(([gi, gk], i) => ({ gi, gk, i }));
+          spiral.forEach((m, rank) => {
+            const h = hash2(m.gi * 7 + 3, m.gk * 5 + 1);
+            pops.push({ x: cellX(m.gi) + (h - 0.5) * 0.06, z: cellZ(m.gk) + (hash2(m.gk, m.gi) - 0.5) * 0.06, t: 6.6 + SH + 0.18 * rank, yaw: h * Math.PI * 2, s: 1.3 + 0.1 * h, near: true });
+          });
+          for (let i = 0; i < NC; i++) {
+            const [gi, gk] = cells[i];
+            if (mine[idx(gi, gk)] !== 1 || isNear(gi, gk)) continue;
+            const h = hash2(gi + 911, gk - 377);
+            const d = stripDist(sX[i], sZ[i]);
+            const tp = isSidewalk(gi, gk) ? bandPop(0, h) : bandPop(d, h);
+            if (!isFinite(tp)) continue;
+            pops.push({ x: sX[i] + (h - 0.5) * 0.08, z: sZ[i] + (hash2(gk, gi) - 0.5) * 0.08, t: Math.max(tp, sT[i] + 0.35), yaw: h * Math.PI * 2, s: 1.45 + 0.2 * h, near: false });
+          }
+        }
+        const NP = pops.length;
+        const poopsNear = new THREE.InstancedMesh(poopGeometry(32), poopMat, 14);
+        const poopsFar = new THREE.InstancedMesh(poopGeometry(12), poopMat, NP - 14);
+        const aoInst = new THREE.InstancedMesh(aoGeo, aoMat, NP);
+        [poopsNear, poopsFar, aoInst].forEach((m) => { m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(m); });
+        poopsNear.castShadow = true; poopsNear.receiveShadow = true; poopsFar.castShadow = true;
+
+        // the stepped-on poop (not clipped: it rides its slab)
+        const impactPoop = new THREE.Mesh(poopGeometry(32), poopMatFree);
+        impactPoop.castShadow = true; impactPoop.receiveShadow = true;
+        impactPoop.rotation.y = 0.6;
+        scene.add(impactPoop);
+        const impactAO = new THREE.Mesh(aoGeo, aoMat);
+        scene.add(impactAO);
+
+        // red detonation outline
+        const outline = (() => {
+          const o = 0.33, i = 0.29;
+          const sh = new THREE.Shape(); sh.moveTo(-o, -o); sh.lineTo(o, -o); sh.lineTo(o, o); sh.lineTo(-o, o); sh.lineTo(-o, -o);
+          const hole = new THREE.Path(); hole.moveTo(-i, -i); hole.lineTo(-i, i); hole.lineTo(i, i); hole.lineTo(i, -i); hole.lineTo(-i, -i);
+          sh.holes.push(hole);
+          const g = new THREE.ExtrudeGeometry(sh, { depth: 0.012, bevelEnabled: false });
+          g.rotateX(-Math.PI / 2);
+          const m = new THREE.Mesh(g, maskPatch(new THREE.MeshBasicMaterial({ color: PAL.red.clone().multiplyScalar(1.35), fog: false })));
+          m.position.set(0, 0, IMPACT_Z);
+          scene.add(m);
+          return m;
+        })();
+
+        // ------------------------------------------------------------ far procedural plane (beyond 200×200)
+        const RT_N = 2048, RT_MAX = 420;
+        const riseData = new Float32Array(RT_N);
+        for (let i = 0; i < RT_N; i++) { const v = tRise((i / (RT_N - 1)) * RT_MAX); riseData[i] = isFinite(v) ? v : 99; }
+        const riseTex = new THREE.DataTexture(riseData, RT_N, 1, THREE.RedFormat, THREE.FloatType);
+        riseTex.minFilter = riseTex.magFilter = THREE.NearestFilter; riseTex.needsUpdate = true;
+        const farU = {
+          uTime: { value: 0 }, uRise: { value: riseTex }, uGrey: { value: PAL.grey.clone() }, uBrown: { value: PAL.brown.clone() }, uVoidCol: { value: PAL.void.clone() },
+          uKeyDir: { value: dirEngine.clone() }, uKeyCol: { value: PAL.engine.clone().multiplyScalar(3.2) }, uRimDir: { value: new THREE.Vector3(-6, 7, -9).normalize() }, uRimCol: { value: PAL.rim.clone().multiplyScalar(1.1) },
+          uAmb: { value: 0.145 }, uFog: { value: new THREE.Vector2(1e4, 2e4) }, uDensity: { value: FAR_DENSITY }, uStrip: { value: new THREE.Vector4(STRIP.x0, STRIP.x1, STRIP.z0, STRIP.z1) },
+          uSafeA: { value: PAL.safeA.clone() }, uSafeB: { value: PAL.safeB.clone() }, uSafeC: { value: PAL.safeC.clone() },
+          uD1: { value: PAL.d1.clone() }, uD2: { value: PAL.d2.clone() }, uD3: { value: PAL.d3.clone() }, uMineTile: { value: PAL.mineTile.clone() },
+          uCalm: { value: 0 },
+        };
+        const farPlane = new THREE.Mesh(
+          new THREE.PlaneGeometry(1000, 1000, 1, 1),
+          new THREE.ShaderMaterial({
+            uniforms: farU, fog: false,
+            vertexShader: `varying vec3 vWp; void main(){ vec4 w = modelMatrix*vec4(position,1.0); vWp=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+            fragmentShader: `
+              uniform float uTime, uAmb, uDensity; uniform sampler2D uRise; uniform vec3 uGrey,uBrown,uVoidCol,uKeyDir,uKeyCol,uRimDir,uRimCol; uniform vec2 uFog; uniform vec4 uStrip;
+              uniform vec3 uSafeA,uSafeB,uSafeC,uD1,uD2,uD3,uMineTile; uniform float uCalm;
+              vec3 calm(vec3 c){ float l=dot(c,vec3(0.2126,0.7152,0.0722)); return mix(c, vec3(l), 0.6*uCalm) * (1.0 - 0.3*uCalm); }
+              varying vec3 vWp;
+              const float P=0.62; const float IZ=-4.65;
+              float hash2(vec2 c){ uvec2 q=uvec2(ivec2(c)+32768); uint h=(q.x*1597334677u)^(q.y*3812015801u); h=(h^(h>>16u))*2246822519u; h^=h>>13u; return float(h)/4294967295.0; }
+              float riseAt(float d){ return texture2D(uRise, vec2(clamp(d/420.0,0.0,1.0),0.5)).r; }
+              float stripD(vec2 p){ float dx=max(max(uStrip.x-p.x,0.0),p.x-uStrip.y); float dz=max(max(uStrip.z-p.y,0.0),p.y-uStrip.w); return length(vec2(dx,dz)); }
+              vec3 shade(vec3 alb, vec3 n){ return alb*(uKeyCol*max(dot(n,uKeyDir),0.0)+uRimCol*max(dot(n,uRimDir),0.0))/3.14159 + alb*uAmb; }
+              float isMine(vec2 c){ return step(hash2(c), uDensity); }
+              // same rule as sGame[] in JS: neighbour count as colour, 0 by district
+              vec3 cellCol(vec2 gc){
+                if (isMine(gc) > 0.5) return uMineTile;
+                float n = 0.0;
+                for (int a=-1;a<=1;a++) for (int b=-1;b<=1;b++) { if (a==0 && b==0) continue; n += isMine(gc+vec2(float(a),float(b))); }
+                if (n < 0.5) { float dh = hash2(floor(gc/24.0) + vec2(5000.0,7000.0)); return dh < 0.3333333 ? uSafeA : (dh < 0.6666667 ? uSafeB : uSafeC); }
+                return n < 1.5 ? uD1 : (n < 2.5 ? uD2 : uD3);
+              }
+              void main(){
+                vec2 g = vec2(vWp.x/P, (IZ - vWp.z)/P);
+                vec2 gc = floor(g+0.5);
+                if (gc.x >= -100.0 && gc.x <= 99.0 && gc.y >= -100.0 && gc.y <= 99.0) discard;
+                vec2 cw = vec2(gc.x*P, IZ - gc.y*P);
+                float d = stripD(cw);
+                float tr = riseAt(d);
+                float age = uTime - tr;
+                float dist = distance(cameraPosition, vWp);
+                float fog = smoothstep(uFog.x, uFog.y, dist);
+                if (age <= 0.0) { gl_FragColor = vec4(uVoidCol,1.0); return; }
+                float rise = clamp(age/0.35,0.0,1.0); rise = 1.0-(1.0-rise)*(1.0-rise);
+                vec2 f = g - gc;                      // [-0.5,0.5]
+                float w = max(fwidth(g.x), fwidth(g.y));
+                float e = max(abs(f.x),abs(f.y));
+                float slabE = 0.30/P, bev = 0.015/P;
+                float inSlab = 1.0 - smoothstep(slabE - w, slabE + w, e);
+                float bevel = smoothstep(slabE-bev-w, slabE-bev+w, e) * inSlab;
+                vec3 nb = abs(f.x)>abs(f.y) ? vec3(sign(f.x),0.0,0.0) : vec3(0.0,0.0,-sign(f.y));
+                vec3 nBev = normalize(vec3(0.0,1.0,0.0)+nb);
+                float far = smoothstep(0.08,0.25,w);   // cell detail below a few px: average it
+                vec3 alb = cellCol(gc);
+                if (isMine(gc) < 0.5) alb = calm(alb); else alb *= 1.0 + 0.8*uCalm;
+                vec3 top = shade(alb, vec3(0.0,1.0,0.0));
+                vec3 bv = shade(alb, nBev);
+                vec3 c = mix(top, bv, mix(bevel, 0.2, far));
+                c = mix(uVoidCol, c, mix(inSlab, 0.94, far));
+                // mine
+                float mn = step(hash2(gc), uDensity) * step(1.0, max(abs(gc.x-0.0)-5.0, max(-8.0-gc.y, gc.y-9.0)));
+                float hp = hash2(gc + vec2(911.0,-377.0));
+                float tp = riseAt(ceil(max(d,0.01)/4.0)*4.0) + 0.35 + 0.25*hp;
+                float pa = clamp((uTime - tp)/0.4, 0.0, 1.0);
+                float sc = pa < 0.45 ? pa/0.45*1.15 : 1.15 - 0.15*clamp((pa-0.45)/0.55,0.0,1.0);
+                // radius in cell units = an instanced far poop's (0.135 m × 1.55 / 0.62 m), grown the same way
+                float rr = 0.34*sc*(1.0 + 0.8*uCalm);
+                float pr = length(f);
+                if (mn > 0.5 && pa > 0.0) {
+                  float ao = smoothstep(rr*1.7, rr*0.9, pr) * 0.55;
+                  vec2 so = -vec2(uKeyDir.x, -uKeyDir.z) / max(uKeyDir.y, 0.2) * 0.3 * sc;
+                  float shd = 1.0 - smoothstep(rr*0.95 - w, rr*0.95 + w, length(f - so));
+                  c *= (1.0 - ao) * (1.0 - 0.6*shd);
+                  // below a few px per cell the sharp disc averages away: use its area instead
+                  float disc = mix(1.0 - smoothstep(rr - w, rr + w, pr), clamp(3.14159*rr*rr, 0.0, 1.0), far);
+                  vec3 n = normalize(vec3(f.x, max(rr*rr - pr*pr, 0.0)*18.0 + 0.15, -f.y));
+                  // ×0.45: the instanced poops are darkened by their own AO and shadow; match them
+                  vec3 pc = shade(uBrown*0.45, n) + (1.0-far)*vec3(0.35)*pow(max(dot(reflect(-uKeyDir,n), normalize(cameraPosition-vWp)),0.0), 24.0);
+                  c = mix(c, pc, disc);
+                }
+                c *= mix(0.15, 1.0, rise);
+                c = mix(c, uVoidCol, fog);
+                gl_FragColor = vec4(c, 1.0);
+              }`,
+          }),
+        );
+        farPlane.rotation.x = -Math.PI / 2;
+        farPlane.position.set(0, 0.0701, -30);
+        scene.add(farPlane);
+
+        // shader-plane mine counter: sampled once on a 2 m lattice into a time histogram
+        const HB = 240; // bins per second
+        const farHist = new Float32Array(DUR * HB + 2);
+        {
+          const step = 2, per = (FAR_DENSITY * step * step) / (P * P);
+          const rMax = frontR[frontR.length - 1];
+          for (let x = STRIP.x0 - rMax; x <= STRIP.x1 + rMax; x += step)
+            for (let z = STRIP.z0 - rMax; z <= STRIP.z1 + rMax; z += step) {
+              const gi = Math.round(x / P), gk = Math.round((IMPACT_Z - z) / P);
+              if (gi >= -HALF && gi < HALF && gk >= -HALF && gk < HALF) continue;
+              const d = stripDist(x, z);
+              const tp = bandPop(d, 0.5);
+              if (!isFinite(tp) || tp >= DUR) continue;
+              farHist[Math.ceil(tp * HB)] += per;
+            }
+          for (let i = 1; i < farHist.length; i++) farHist[i] += farHist[i - 1];
+        }
+        const popTimes = pops.map((p) => p.t).sort((a, b) => a - b);
+        api.count = (t) => {
+          let lo = 0, hi = popTimes.length;
+          while (lo < hi) { const m = (lo + hi) >> 1; if (popTimes[m] <= t) lo = m + 1; else hi = m; }
+          const far = farHist[clamp(Math.floor(t * HB), 0, farHist.length - 1)];
+          return 1 + lo + Math.round(far);
+        };
+
+        // ------------------------------------------------------------ shoe + leg
+        const foot = new THREE.Group();
+        scene.add(foot);
+        {
+          const sh = new THREE.Shape();
+          sh.absarc(0, 0.085, 0.056, 0, Math.PI, false);
+          sh.absarc(0, -0.105, 0.046, Math.PI, Math.PI * 2, false);
+          sh.closePath();
+          const soleG = new THREE.ExtrudeGeometry(sh, { depth: 0.032, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 16 });
+          soleG.rotateX(-Math.PI / 2);
+          const sole = new THREE.Mesh(soleG, std(PAL.concrete.clone().multiplyScalar(1.0), 0.6));
+          const tread = new THREE.Mesh(soleG, std(PAL.void.clone(), 0.8)); tread.scale.set(1.02, 0.25, 1.02);
+          const upperG = new THREE.ExtrudeGeometry(sh, { depth: 0.035, bevelEnabled: true, bevelThickness: 0.035, bevelSize: 0.01, bevelSegments: 5, curveSegments: 16 });
+          upperG.rotateX(-Math.PI / 2);
+          const upper = new THREE.Mesh(upperG, std(PAL.shadow.clone(), 0.8)); upper.scale.set(0.9, 1, 0.92); upper.position.y = 0.034;
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.095, 1.3, 20, 4), std(PAL.shadow.clone().multiplyScalar(0.7), 0.85));
+          leg.position.set(0, 0.73, 0.06); leg.rotation.x = 0.16;
+          // pivot at the heel (shape heel edge is at z = +0.15): the group origin sits under it
+          [tread, sole, upper, leg].forEach((m) => { m.position.z -= 0.15; foot.add(m); });
+        }
+        foot.children.forEach((m) => { m.castShadow = true; m.receiveShadow = true; world.push({ obj: m, solid: m.material, cast: true, d: 0.4 }); });
+        const footRig = (t) => {
+          const land = { x: 0.01, y: 0.045, z: IMPACT_Z + 0.03 + 0.15 };
+          if (t < 2.55) return null;
+          const u = sat01((t - 2.6) / 0.4), e = ease.p2in(u);
+          return { x: land.x, y: lerp(0.95, land.y, e), z: lerp(land.z + 0.32, land.z, ease.p2out(u)), pitch: lerp(18, 0, ease.p2inOut(u)) * DEG };
+        };
+
+        // ------------------------------------------------------------ autumn debris (camouflage)
+        // Dry leaves, crumpled leaves and pinecones: dark lumps of the poop's size all over the
+        // walk, so in act 1 the poop is one lump among many. They are not masked: at 3.0 s they
+        // go grey with the world while the poop keeps its brown. They sink with their slab's wave.
+        const debris = [];
+        {
+          const leafG = new THREE.PlaneGeometry(0.11, 0.07, 6, 3); leafG.rotateX(-Math.PI / 2);
+          { const p = leafG.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, 9 * x * x + 6 * z * z + 0.004); } leafG.computeVertexNormals(); }
+          const lumpG = new THREE.IcosahedronGeometry(0.045, 0); lumpG.scale(1.4, 0.65, 1); lumpG.translate(0, 0.022, 0);
+          const coneG = new THREE.IcosahedronGeometry(0.04, 1); coneG.scale(0.85, 0.85, 1.35); coneG.translate(0, 0.033, 0);
+          const kinds = [
+            { geo: leafG, n: 170, flat: false, cols: [[PAL.brown, 0.7, 1.25], [PAL.sun, 0.28, 0.45]] },
+            { geo: lumpG, n: 80, flat: true, cols: [[PAL.brown, 0.55, 1.0], [PAL.sun, 0.22, 0.32]] },
+            { geo: coneG, n: 16, flat: true, cols: [[PAL.brown, 0.45, 0.75]] },
+          ];
+          const rnd = mulberry32(2024);
+          const PX = 0.03, PZ = IMPACT_Z + 0.02;
+          kinds.forEach((k, ki) => {
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.75, side: THREE.DoubleSide, flatShading: k.flat });
+            const mesh = new THREE.InstancedMesh(k.geo, mat, k.n);
+            mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = false;
+            mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            const items = [];
+            for (let i = 0; i < k.n; i++) {
+              let x, z;
+              // a fifth of each kind lands within 2 m of the poop, the rest along the walk
+              for (let tries = 0; tries < 50; tries++) {
+                if (i < k.n / 5) { const a = rnd() * Math.PI * 2, r = 0.42 + rnd() * 1.6; x = PX + Math.cos(a) * r; z = PZ + Math.sin(a) * r; }
+                else { const u = rnd(); x = (u < 0.5 ? -1 : 1) * (2.65 - Math.pow(rnd(), 1.8) * 2.65); z = 0.3 - rnd() * 28; }
+                if (Math.abs(x) < 2.7 && Math.hypot(x - PX, z - PZ) > 0.38) break;
+              }
+              const [base, lo, hi] = k.cols[Math.floor(rnd() * k.cols.length)];
+              mesh.setColorAt(i, base.clone().multiplyScalar(lo + rnd() * (hi - lo)));
+              const gi = Math.round(x / P), gk = Math.round((IMPACT_Z - z) / P);
+              const near = i < k.n / 5; // the poop's neighbours are bigger, so it is not the tallest lump
+              items.push({ x, z, yaw: rnd() * Math.PI * 2, s: near ? 1.25 + rnd() * 0.6 : 0.8 + rnd() * 0.5, tw: T_CRANE + Math.hypot(cellX(gi), cellZ(gk) - IMPACT_Z) / 11 });
+            }
+            mesh.instanceColor.needsUpdate = true;
+            scene.add(mesh);
+            debris.push({ mesh, items });
+          });
+        }
+
+        // ------------------------------------------------------------ dust
+        const DUSTN = 1400;
+        const dustU = { uT: { value: 0 }, uFade: { value: 1 }, uK: { value: 0 }, uMax: { value: 28 }, uFocus: { value: 3.5 }, uH: { value: H }, uTanHalf: { value: Math.tan((VFOV / 2) * DEG) }, uSun: { value: dirSun.clone() }, uCol: { value: PAL.sun.clone() } };
+        {
+          const rnd = mulberry32(4242);
+          const pos = new Float32Array(DUSTN * 3), vel = new Float32Array(DUSTN * 3), seed = new Float32Array(DUSTN);
+          for (let i = 0; i < DUSTN; i++) {
+            pos[i * 3] = -2.7 + rnd() * 5.6; pos[i * 3 + 1] = 0.08 + Math.pow(rnd(), 1.6) * 1.7; pos[i * 3 + 2] = 0.6 - rnd() * 16;
+            const sp = 0.02 + rnd() * 0.04, a = rnd() * Math.PI * 2;
+            vel[i * 3] = Math.cos(a) * sp; vel[i * 3 + 1] = (rnd() - 0.4) * 0.02; vel[i * 3 + 2] = Math.sin(a) * sp;
+            seed[i] = rnd();
+          }
+          const g = new THREE.BufferGeometry();
+          g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+          g.setAttribute("aVel", new THREE.BufferAttribute(vel, 3));
+          g.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
+          const dust = new THREE.Points(g, new THREE.ShaderMaterial({
+            uniforms: dustU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+            vertexShader: `attribute vec3 aVel; attribute float aSeed; uniform float uT,uFade,uK,uMax,uFocus,uH,uTanHalf; uniform vec3 uSun; varying float vA;
+              void main(){ float s=aSeed*6.2831;
+                vec3 p = position + aVel*uT + vec3(sin(uT*0.7+s), sin(uT*0.5+s*1.7)*0.6, cos(uT*0.6+s*2.3))*0.02;
+                vec4 mv = modelViewMatrix*vec4(p,1.0); float z=max(-mv.z,0.02);
+                gl_Position = projectionMatrix*mv;
+                float base = 0.0012*uH/(2.0*uTanHalf*z);
+                float coc = min(uMax, uK*abs(z-uFocus)/z);
+                float sz = max(max(base,coc),1.6); gl_PointSize = sz;
+                vec3 vd = normalize(p - cameraPosition);
+                float phase = 0.15 + 2.6*pow(max(dot(vd,uSun),0.0),5.0);
+                vA = uFade*phase*clamp(5.0/(sz*sz),0.02,1.0)*(0.4+0.6*fract(aSeed*13.7)); }`,
+            fragmentShader: `uniform vec3 uCol; varying float vA; void main(){ vec2 q=gl_PointCoord*2.0-1.0; float r=dot(q,q); if(r>1.0) discard; float a=vA*smoothstep(1.0,0.75,r); gl_FragColor=vec4(uCol*a*3.0,0.0); }`,
+          }));
+          dust.frustumCulled = false;
+          scene.add(dust);
+        }
+
+        // ------------------------------------------------------------ post
+        const rtMain = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, samples: 4, depthTexture: new THREE.DepthTexture(W, H) });
+        rtMain.depthTexture.type = THREE.UnsignedIntType;
+        const mk = (w, h) => new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, depthBuffer: false });
+        const rtDof = mk(W, H), rtB1 = mk(W / 2, H / 2), rtB2 = mk(W / 2, H / 2), rtQ1 = mk(W / 4, H / 4), rtQ2 = mk(W / 4, H / 4);
+        const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const quadScene = new THREE.Scene();
+        const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
+        quad.frustumCulled = false;
+        quadScene.add(quad);
+        const VS = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`;
+        // NaN/Inf guard on the exponent bits: D3D's compiler is allowed to drop isnan(), this it cannot
+        const GUARD = `vec3 guard(vec3 c){ uvec3 e = floatBitsToUint(c) & uvec3(0x7f800000u); if (any(equal(e, uvec3(0x7f800000u)))) return vec3(0.0); return clamp(c, 0.0, 64.0); }`;
+        const pass = (fs, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: VS, fragmentShader: fs, depthTest: false, depthWrite: false });
+        const dofM = pass(`uniform sampler2D tColor,tDepth; uniform float uNear,uFar,uFocus,uK,uMax,uAmt; uniform vec2 uTexel; varying vec2 vUv; ${GUARD}
+          float lin(float d){ return uNear*uFar/max(uFar - d*(uFar-uNear), 1e-6); }
+          float cocAt(vec2 uv){ float z=lin(textureLod(tDepth,uv,0.0).r); return min(uMax, uAmt*uK*abs(z-uFocus)/max(z,1e-3)); }
+          void main(){ vec4 c0=texture2D(tColor,vUv); c0.rgb=guard(c0.rgb);
+            if(uAmt<=0.001){ gl_FragColor=c0; return; }
+            float R=cocAt(vUv)*0.5;
+            if(R<0.6){ gl_FragColor=c0; return; }
+            vec4 acc=c0; float ws=1.0;
+            for(int i=1;i<64;i++){ float fi=float(i); float r=sqrt(fi/64.0)*R; float a=fi*2.39996323;
+              vec2 uv=vUv+vec2(cos(a),sin(a))*r*uTexel; float sr=cocAt(uv)*0.5;
+              float w=clamp(sr-r+1.0,0.0,1.0); vec4 s=textureLod(tColor,uv,0.0); s.rgb=guard(s.rgb);
+              w*=1.0+0.6*dot(s.rgb,vec3(0.2126,0.7152,0.0722));
+              acc+=s*w; ws+=w; }
+            gl_FragColor=acc/max(ws,1e-4); }`,
+          { tColor: { value: null }, tDepth: { value: rtMain.depthTexture }, uNear: { value: 0.05 }, uFar: { value: 3000 }, uFocus: { value: 3.5 }, uK: { value: 0 }, uMax: { value: 28 }, uAmt: { value: 1 }, uTexel: { value: new THREE.Vector2(1 / W, 1 / H) } });
+        const brightM = pass(`uniform sampler2D t; uniform float uTh,uKnee; uniform vec2 uTexel; varying vec2 vUv; ${GUARD}
+          void main(){ vec3 c=vec3(0.0);
+            c+=guard(texture2D(t,vUv+uTexel*vec2(-0.5,-0.5)).rgb); c+=guard(texture2D(t,vUv+uTexel*vec2(0.5,-0.5)).rgb);
+            c+=guard(texture2D(t,vUv+uTexel*vec2(-0.5,0.5)).rgb); c+=guard(texture2D(t,vUv+uTexel*vec2(0.5,0.5)).rgb); c*=0.25;
+            float l=dot(c,vec3(0.2126,0.7152,0.0722)); float k=smoothstep(uTh-uKnee,uTh+uKnee,l);
+            gl_FragColor=vec4(c*k*max(l-uTh+uKnee,0.0)/max(l,1e-4),1.0); }`,
+          { t: { value: null }, uTh: { value: 2.2 }, uKnee: { value: 0.4 }, uTexel: { value: new THREE.Vector2(1 / W, 1 / H) } });
+        const blurM = pass(`uniform sampler2D t; uniform vec2 uDir; varying vec2 vUv;
+          void main(){ vec3 c=texture2D(t,vUv).rgb*0.2270;
+            c+=(texture2D(t,vUv+uDir*1.3846).rgb+texture2D(t,vUv-uDir*1.3846).rgb)*0.3162;
+            c+=(texture2D(t,vUv+uDir*3.2308).rgb+texture2D(t,vUv-uDir*3.2308).rgb)*0.0703;
+            gl_FragColor=vec4(c,1.0); }`, { t: { value: null }, uDir: { value: new THREE.Vector2() } });
+        const copyM = pass(`uniform sampler2D t; varying vec2 vUv; void main(){ gl_FragColor=vec4(texture2D(t,vUv).rgb,1.0); }`, { t: { value: null } });
+        const compM = pass(`uniform sampler2D tScene,tB1,tB2,tHorde; uniform float uBloom,uFlash,uExposure,uSat,uVig,uTone,uHorde; varying vec2 vUv; ${GUARD}
+          vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0); }
+          vec3 toSrgb(vec3 c){ return mix(c*12.92, 1.055*pow(c,vec3(1.0/2.4))-0.055, step(0.0031308,c)); }
+          uniform float uGain;
+          void main(){ vec4 s=texture2D(tScene,vUv); vec3 c=guard(s.rgb)*uGain; float mask=1.0-clamp(s.a,0.0,1.0);
+            c += uBloom*(guard(texture2D(tB1,vUv).rgb) + 1.3*guard(texture2D(tB2,vUv).rgb));
+            c = mix(c, vec3(6.0), uFlash);
+            c = aces(c*uExposure);
+            float l=dot(c,vec3(0.2126,0.7152,0.0722));
+            // uSat > 1 pushes colour; the masked poop keeps at least its own saturation
+            c = mix(vec3(l), c, mix(uSat, max(uSat, 1.0), mask));
+            // split tone: blue shadows, warm highlights
+            c += uTone * ((1.0 - l) * vec3(-0.03, 0.0, 0.06) + l * vec3(0.05, 0.015, -0.04));
+            c = clamp(c, 0.0, 1.0);
+            vec2 q=vUv-0.5; c *= 1.0 - uVig*smoothstep(0.2,0.9,dot(q,q)*2.6);
+            c = toSrgb(clamp(c,0.0,1.0));
+            // the horde (premultiplied, already in display colours) over the graded city
+            vec4 hd = texture2D(tHorde, vUv) * uHorde; c = c*(1.0 - clamp(hd.a,0.0,1.0)) + clamp(hd.rgb,0.0,1.0);
+            float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);
+            c += (n-0.5)/255.0;
+            gl_FragColor=vec4(c,1.0); }`,
+          { tScene: { value: null }, tB1: { value: rtB1.texture }, tB2: { value: rtQ1.texture }, uBloom: { value: 0.35 }, uFlash: { value: 0 }, uExposure: { value: 1 }, uSat: { value: 1 }, uVig: { value: 0.06 }, uTone: { value: 1 }, uGain: { value: 1 }, tHorde: { value: null }, uHorde: { value: 0 } });
+        const runPass = (mat, target) => { quad.material = mat; renderer.setRenderTarget(target); renderer.render(quadScene, quadCam); };
+        // motion blur: sub-frames (each a full pure render at its own time) averaged by ping-pong
+        // between two targets: acc = prev + cur * w. No GPU blending: additive float blending gave
+        // a different (darker) result than a single render on the Intel GPU, so frames that take one
+        // sample (the freeze) jumped against frames that take four.
+        const rtAccA = mk(W, H), rtAccB = mk(W, H);
+        const accM = pass(`uniform sampler2D tPrev, tCur; uniform float uW, uFirst; varying vec2 vUv;
+          void main(){ vec4 p = uFirst > 0.5 ? vec4(0.0) : texture2D(tPrev,vUv); gl_FragColor = p + texture2D(tCur,vUv) * uW; }`,
+          { tPrev: { value: null }, tCur: { value: null }, uW: { value: 1 }, uFirst: { value: 1 } });
+        const SHUTTER = 0.5 / 60; // 180° at 60 fps
+        const SUBFRAMES = 4;
+        // The approved grade was tuned while a blending bug kept only the last sub-frame at ¼
+        // weight; 0.28 reproduces it (measured: 1.5 s → 111.9 vs 111.9, 4.70 s → 89.7 vs 90.8).
+        const GAIN = 0.28;
+
+
+        // ------------------------------------------------------------ the horde (bloc1-v2)
+        // A stampede of dog silhouettes crossing left → right in front of the city, under the 2D.
+        // Drawn in code once into an atlas (9 breeds × 6 gallop poses), shown as instanced sprites in
+        // screen space, rendered with its own 4 sub-frames and laid over the graded city in compM, so
+        // its #0a0b0d and its orange/pink back-light keep their exact colours. Pure in t.
+        const POSES = 6, CELL_W = 384, CELL_H = 256, GROUND = CELL_H - 12, DOG_H = 190;
+        // k: on-screen height relative to the plane's; f: strides per second
+        const BREEDS = [
+          { k: 0.36, f: 7.0, bodyL: 190, bodyH: 46, legL: 30, legW: 12, neck: 44, headR: 23, snout: 32, snoutH: 16, ear: "long", tail: "thin" }, // 0 teckel
+          { k: 1.0, f: 2.6, bodyL: 128, bodyH: 62, legL: 92, legW: 17, neck: 62, headR: 25, snout: 30, snoutH: 20, ear: "flop", tail: "thin" }, // 1 labrador
+          { k: 0.86, f: 2.9, bodyL: 104, bodyH: 50, legL: 98, legW: 12, neck: 70, headR: 22, snout: 30, snoutH: 14, ear: "pom", tail: "pom" }, // 2 caniche
+          { k: 1.05, f: 2.5, bodyL: 140, bodyH: 60, legL: 96, legW: 16, neck: 64, headR: 23, snout: 38, snoutH: 17, ear: "up", tail: "bushy" }, // 3 berger allemand
+          { k: 0.7, f: 3.3, bodyL: 96, bodyH: 68, legL: 52, legW: 20, neck: 34, headR: 31, snout: 10, snoutH: 26, ear: "rose", tail: "stub" }, // 4 bouledogue
+          { k: 1.0, f: 2.6, bodyL: 126, bodyH: 62, legL: 90, legW: 17, neck: 60, headR: 25, snout: 30, snoutH: 18, ear: "up", tail: "curl" }, // 5 husky
+          { k: 1.08, f: 2.3, bodyL: 140, bodyH: 44, legL: 114, legW: 10, neck: 72, headR: 18, snout: 42, snoutH: 11, ear: "fold", tail: "thin" }, // 6 lévrier
+          { k: 0.42, f: 4.4, bodyL: 74, bodyH: 40, legL: 56, legW: 9, neck: 34, headR: 25, snout: 12, snoutH: 11, ear: "big", tail: "curlthin" }, // 7 chihuahua
+          { k: 1.0, f: 2.6, bodyL: 128, bodyH: 62, legL: 92, legW: 17, neck: 62, headR: 25, snout: 30, snoutH: 20, ear: "flop", tail: "feather" }, // 8 golden
+        ];
+        // one dog facing right, feet on y = GROUND, phase ph ∈ [0, 1) of its stride: 0 fully stretched
+        // (fore legs reaching, hind legs pushing back), 0.5 gathered (legs folded under, back arched)
+        function drawDog(g, b, ph) {
+          const w = 2 * Math.PI * ph;
+          const sF = 0.5 + 0.5 * Math.cos(w), sH = 0.5 + 0.5 * Math.cos(w + 0.6); // 1 = stretched
+          const spineY = GROUND - b.legL - b.bodyH * 0.3 - 0.08 * b.legL * (1 - sF);
+          const hipX = (CELL_W - b.bodyL) / 2 - 10, shX = hipX + b.bodyL;
+          const arch = 0.16 * b.bodyH * (1 - sF);
+          g.lineCap = "round"; g.lineJoin = "round";
+          // a leg from (ax, ay): upper half at angle a from the vertical (+ = forward), lower half bent by knee
+          const leg = (ax, ay, a, knee, L, lw) => {
+            const kx = ax + Math.sin(a) * L * 0.5, ky = ay + Math.cos(a) * L * 0.5, a2 = a + knee;
+            g.lineWidth = lw * 1.35; g.beginPath(); g.moveTo(ax, ay); g.lineTo(kx, ky); g.stroke();
+            g.lineWidth = lw; g.beginPath(); g.moveTo(kx, ky); g.lineTo(kx + Math.sin(a2) * L * 0.52, ky + Math.cos(a2) * L * 0.52); g.stroke();
+          };
+          const L = b.legL + b.bodyH * 0.3;
+          const fore = (dx, lag) => { const s = 0.5 + 0.5 * Math.cos(w - lag); leg(shX - 8 + dx, spineY + 4, lerp(-0.35, 1.0, s), lerp(-1.0, -0.1, s), L, b.legW); };
+          const hind = (dx, lag) => { const s = 0.5 + 0.5 * Math.cos(w + 0.6 - lag); leg(hipX + 8 + dx, spineY, lerp(0.5, -0.95, s), lerp(0.9, 0.3, s), L, b.legW); };
+          hind(-6, 0.35); fore(-6, 0.35); // far pair, a beat behind
+          // body: deep chest, tucked waist, haunch; the back arches when gathered
+          g.lineWidth = b.bodyH * 0.9;
+          g.beginPath(); g.moveTo(hipX, spineY); g.quadraticCurveTo((hipX + shX) / 2, spineY - arch - b.bodyH * 0.12, shX, spineY - 2); g.stroke();
+          g.beginPath(); g.ellipse(shX - 6, spineY + b.bodyH * 0.06, b.bodyH * 0.6, b.bodyH * 0.56, -0.15, 0, 2 * Math.PI); g.fill();
+          g.beginPath(); g.ellipse(hipX + 6, spineY - arch * 0.3, b.bodyH * 0.48, b.bodyH * 0.46, 0, 0, 2 * Math.PI); g.fill();
+          hind(4, 0); fore(4, 0);
+          // neck rises forward from the withers; the head bobs against the stride
+          const n0x = shX + 2, n0y = spineY - b.bodyH * 0.25;
+          const nx = shX + b.neck * 0.62, ny = spineY - b.bodyH * 0.3 - b.neck * 0.58 + 5 * (sF - 0.5), r = b.headR;
+          g.lineWidth = b.bodyH * 0.62;
+          g.beginPath(); g.moveTo(n0x, n0y); g.lineTo(nx - r * 0.2, ny + r * 0.2); g.stroke();
+          g.beginPath(); g.arc(nx, ny, r, 0, 2 * Math.PI); g.fill();
+          g.lineWidth = b.snoutH;
+          g.beginPath(); g.moveTo(nx + r * 0.3, ny + r * 0.2); g.lineTo(nx + r * 0.5 + b.snout, ny + r * 0.42); g.stroke();
+          // ears
+          const flap = 0.3 * (sF - 0.5);
+          const tri = (ax, ay, bx, by, cx, cy) => { g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.lineTo(cx, cy); g.closePath(); g.fill(); };
+          const line = (ax, ay, bx, by) => { g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke(); };
+          const disc = (cx, cy, rr) => { g.beginPath(); g.arc(cx, cy, rr, 0, 2 * Math.PI); g.fill(); };
+          g.lineWidth = Math.max(8, r * 0.5);
+          if (b.ear === "up") tri(nx - r * 0.75, ny - r * 0.2, nx - r * 0.55, ny - r * 1.75, nx + r * 0.1, ny - r * 0.65);
+          else if (b.ear === "big") tri(nx - r * 0.75, ny - r * 0.05, nx - r * 1.1, ny - r * 1.8, nx + r * 0.05, ny - r * 0.6);
+          else if (b.ear === "flop") line(nx - r * 0.35, ny - r * 0.55, nx - r * (0.95 + flap), ny + r * 0.6);
+          else if (b.ear === "long") line(nx - r * 0.3, ny - r * 0.45, nx - r * (1.4 + 2 * flap), ny + r * (0.8 - flap));
+          else if (b.ear === "fold") line(nx - r * 0.45, ny - r * 0.6, nx - r * 1.25, ny - r * 0.5);
+          else if (b.ear === "rose") disc(nx - r * 0.6, ny - r * 0.75, r * 0.33);
+          else if (b.ear === "pom") { disc(nx - r * 0.55, ny + r * 0.45, r * 0.6); disc(nx - r * 0.1, ny - r * 0.9, r * 0.66); disc(shX - 4, spineY - 4, b.bodyH * 0.62); }
+          // tail, set high on the croup
+          const tx = hipX - b.bodyH * 0.3, ty = spineY - b.bodyH * 0.25, wag = 0.3 * Math.sin(2 * w);
+          g.lineWidth = b.tail === "bushy" || b.tail === "feather" ? 15 : b.tail === "stub" ? 14 : 7;
+          if (b.tail === "stub") line(tx + 8, ty, tx - 4, ty - 6);
+          else if (b.tail === "curl" || b.tail === "curlthin") { g.beginPath(); g.arc(tx + 6, ty - 18, 15, Math.PI * 0.5, Math.PI * 2.1); g.stroke(); }
+          else if (b.tail === "pom") { g.lineWidth = 7; line(tx, ty, tx - 12, ty - 32); disc(tx - 14, ty - 38, 14); }
+          else {
+            const lift = b.tail === "bushy" ? 0.25 : b.tail === "feather" ? 0.15 : 0.05;
+            g.beginPath(); g.moveTo(tx + 6, ty); g.quadraticCurveTo(tx - 34, ty - 34 * (lift + 0.4 + wag), tx - 62, ty - 12 + 30 * (0.3 - lift - wag)); g.stroke();
+          }
+        }
+        const atlas = document.createElement("canvas");
+        atlas.width = CELL_W * POSES; atlas.height = CELL_H * BREEDS.length;
+        {
+          const ga = atlas.getContext("2d");
+          const cell = document.createElement("canvas"); cell.width = CELL_W; cell.height = CELL_H;
+          const gc = cell.getContext("2d");
+          const rimGrad = gc.createLinearGradient(0, 0, CELL_W, 0);
+          rimGrad.addColorStop(0, "#ff5d8f"); rimGrad.addColorStop(1, "#ff8a2a");
+          BREEDS.forEach((b, row) => {
+            for (let p = 0; p < POSES; p++) {
+              // back-light: the dog in an orange → pink gradient, then the same dog in #0a0b0d moved 3 px
+              // back and 7 px down over it (source-atop): only the back, the ears and the tail keep a rim
+              gc.globalCompositeOperation = "source-over";
+              gc.clearRect(0, 0, CELL_W, CELL_H);
+              gc.fillStyle = gc.strokeStyle = rimGrad;
+              drawDog(gc, b, p / POSES);
+              gc.globalCompositeOperation = "source-atop";
+              gc.save(); gc.translate(-3, 7);
+              gc.fillStyle = gc.strokeStyle = "#0a0b0d";
+              drawDog(gc, b, p / POSES);
+              gc.restore();
+              ga.drawImage(cell, p * CELL_W, row * CELL_H);
+            }
+          });
+        }
+        const atlasTex = new THREE.CanvasTexture(atlas);
+        atlasTex.colorSpace = THREE.NoColorSpace;
+        atlasTex.premultiplyAlpha = true;
+        atlasTex.generateMipmaps = true;
+        atlasTex.minFilter = THREE.LinearMipmapLinearFilter;
+        atlasTex.anisotropy = 4;
+
+        // the 45 dogs: three depth planes, a stretched pack (heads, body, tail), one late teckel.
+        // Crossing times are shorter than the brief's 2.4 / 3.0 / 3.6 s so the whole pack is out before
+        // the weight; x is linear in t (the only linear motion of the film), everything else eases.
+        const PLANES = [
+          { h: 140, D: 2.3, ground: 842, n: 18, enter: [0.75, 0.95] }, // far
+          { h: 260, D: 1.9, ground: 950, n: 15, enter: [0.8, 1.12] }, // middle
+          { h: 420, D: 1.6, ground: 1074, n: 11, enter: [0.85, 1.25] }, // front
+        ];
+        const dogs = [];
+        {
+          const rnd = mulberry32(0x40d6);
+          const pickBreed = (prev) => { let b; do b = 1 + Math.floor(rnd() * 8); while (b === prev); return b; };
+          PLANES.forEach((pl, pi) => {
+            let prev = -1;
+            for (let i = 0; i < pl.n; i++) {
+              // heads first, then the body of the pack, then a thinner tail
+              const u = i / (pl.n - 1);
+              const te = T0 + lerp(pl.enter[0], pl.enter[1], Math.pow(u, 1.35)) + (rnd() - 0.5) * 0.04;
+              const breed = pickBreed(prev); prev = breed;
+              const B = BREEDS[breed];
+              const h = pl.h * B.k * (0.92 + 0.16 * rnd());
+              dogs.push({ plane: pi, breed, h, te, D: pl.D * (0.94 + 0.12 * rnd()), ground: pl.ground + (rnd() - 0.5) * 18, f: B.f * (0.9 + 0.2 * rnd()), ph: rnd(), lane: null, jump: null });
+            }
+          });
+          // three dogs change lane on the way across
+          [[4, 46], [20, -40], [37, 34]].forEach(([i, dy]) => (dogs[i].lane = { dy, at: 0.45 + 0.1 * (i % 3) }));
+          // a chihuahua overtakes a labrador in the middle plane by jumping over it at x ≈ 1000
+          const big = dogs.find((d) => d.plane === 1 && d.breed !== 7 && d.breed !== 4);
+          big.breed = 1; big.h = PLANES[1].h * BREEDS[1].k;
+          const small = { plane: 1, breed: 7, h: PLANES[1].h * BREEDS[7].k, D: 1.45, ground: big.ground, f: BREEDS[7].f, ph: 0.3, lane: null, jump: null };
+          const wOf = (d) => (CELL_W * d.h) / DOG_H;
+          const tc = big.te + ((1000 + wOf(big) / 2) / (W + wOf(big))) * big.D;
+          small.te = tc - ((1000 + wOf(small) / 2) / (W + wOf(small))) * small.D;
+          small.jump = { tc, hgt: big.h * 0.85 };
+          // replaces the last middle-plane dog so the count stays 45
+          const lastMid = dogs.map((d) => d.plane).lastIndexOf(1);
+          dogs.splice(lastMid, 1, small);
+          // the gag: one teckel, front plane, flat out, overtaken by everyone, out of frame at T0 + 3.6 s
+          const tk = { plane: 2, breed: 0, h: PLANES[2].h * BREEDS[0].k, ground: 1072, f: BREEDS[0].f, ph: 0, lane: null, jump: null };
+          tk.te = T0 + 0.8; tk.D = 2.8;
+          dogs.push(tk);
+          // paint order: far plane first, front plane last, the jumper above the dog it clears
+          dogs.sort((a, b) => a.plane - b.plane || (a.jump ? 1 : 0) - (b.jump ? 1 : 0));
+        }
+        const ND = dogs.length;
+        const hordeScene = new THREE.Scene();
+        const hordeCam = new THREE.OrthographicCamera(0, W, H, 0, -10, 10);
+        const spriteGeo = new THREE.PlaneGeometry(1, 1);
+        spriteGeo.translate(0, 0.5, 0); // origin at the bottom centre of the cell
+        const aCell = new THREE.InstancedBufferAttribute(new Float32Array(ND * 2), 2);
+        aCell.setUsage(THREE.DynamicDrawUsage);
+        spriteGeo.setAttribute("aCell", aCell);
+        const horde = new THREE.InstancedMesh(spriteGeo, new THREE.ShaderMaterial({
+          uniforms: { tAtlas: { value: atlasTex }, uCell: { value: new THREE.Vector2(1 / POSES, 1 / BREEDS.length) } },
+          vertexShader: `attribute vec2 aCell; uniform vec2 uCell; varying vec2 vUv;
+            void main(){ vUv = (aCell + uv) * uCell; gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0); }`,
+          fragmentShader: `uniform sampler2D tAtlas; varying vec2 vUv; void main(){ gl_FragColor = texture2D(tAtlas, vUv); }`,
+          transparent: true, depthTest: false, depthWrite: false,
+          blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
+          blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+          blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
+        }), ND);
+        horde.frustumCulled = false;
+        horde.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        hordeScene.add(horde);
+        const HORDE_ON = [T0 + 0.6, T0 + 3.7];
+        const HORDE_SHUTTER = 0.5 / 60; // 180°, like the city: wider showed the four sub-frames as separate copies
+        const rtHorde = mk(W, H), rtHAccA = mk(W, H), rtHAccB = mk(W, H);
+        // draws the horde at t into rtHorde (premultiplied RGBA, transparent where no dog)
+        function drawHorde(t) {
+          const arr = horde.instanceMatrix.array, cellArr = aCell.array;
+          for (let i = 0; i < ND; i++) {
+            const d = dogs[i], o = i * 16;
+            const sw = (CELL_W * d.h) / DOG_H, sh = (CELL_H * d.h) / DOG_H;
+            const u = (t - d.te) / d.D;
+            arr.fill(0, o, o + 16);
+            if (!(u > 0 && u < 1)) continue;
+            const x = lerp(-sw / 2, W + sw / 2, u);
+            const run = d.f * (t - d.te) + d.ph;
+            let yFeet = d.ground - 0.03 * d.h * Math.abs(Math.sin(Math.PI * run));
+            if (d.lane) yFeet += d.lane.dy * ease.p2inOut(sat01((u - d.lane.at) / 0.25));
+            if (d.jump) { const k = (t - d.jump.tc + 0.24) / 0.48; if (k > 0 && k < 1) yFeet -= d.jump.hgt * Math.sin(Math.PI * k); }
+            // feet sit 12 px above the cell's bottom edge
+            const y = H - yFeet - (12 * d.h) / DOG_H;
+            arr[o] = sw; arr[o + 5] = sh; arr[o + 10] = 1; arr[o + 12] = x; arr[o + 13] = y; arr[o + 15] = 1;
+            const pose = ((Math.floor(run * POSES) % POSES) + POSES) % POSES;
+            cellArr[i * 2] = pose; cellArr[i * 2 + 1] = BREEDS.length - 1 - d.breed; // texture rows run bottom-up
+          }
+          horde.instanceMatrix.needsUpdate = true;
+          aCell.needsUpdate = true;
+          renderer.setRenderTarget(rtHorde);
+          renderer.setClearColor(0x000000, 0);
+          renderer.clear();
+          renderer.render(hordeScene, hordeCam);
+        }
+
+        // ------------------------------------------------------------ render(t): pure
+        const tmpCol = new THREE.Color();
+        const slabArr = slabs.instanceMatrix.array, slabColArr = slabs.instanceColor.array;
+        const conc = PAL.concrete, grey = PAL.grey;
+        const setM = (arr, i, x, y, z, sx, sy, sz, yaw) => {
+          const c = Math.cos(yaw), s = Math.sin(yaw), o = i * 16;
+          arr[o] = c * sx; arr[o + 1] = 0; arr[o + 2] = -s * sx; arr[o + 3] = 0;
+          arr[o + 4] = 0; arr[o + 5] = sy; arr[o + 6] = 0; arr[o + 7] = 0;
+          arr[o + 8] = s * sz; arr[o + 9] = 0; arr[o + 10] = c * sz; arr[o + 11] = 0;
+          arr[o + 12] = x; arr[o + 13] = y; arr[o + 14] = z; arr[o + 15] = 1;
+        };
+        // pop curve: rise out of the cell (clipped by its top), y-scale 1.4 → 0.85 → 1, back.out(2.5)
+        const popState = (t, tp) => {
+          const p = (t - tp) / 0.4;
+          if (p <= 0) return null;
+          if (p >= 1) return { y: 0, sy: 1 };
+          let y, sy;
+          if (p < 0.45) { const k = p / 0.45; y = -0.21 * (1 - ease.p2out(k)); sy = lerp(0.7, 1.4, ease.p2out(k)); }
+          else if (p < 0.7) { y = 0; sy = lerp(1.4, 0.85, ease.p2inOut((p - 0.45) / 0.25)); }
+          else { y = 0; sy = lerp(0.85, 1, ease.backOut(2.5)((p - 0.7) / 0.3)); }
+          return { y, sy };
+        };
+        const keyDir = new THREE.Vector3();
+
+        // draws the scene at t (with its depth of field) into rtDof; pure in t
+        function drawScene(t) {
+          const tf = Math.min(t, 3.0); // frozen clock for the dust
+
+          // camera
+          const cp = camPose(t);
+          camera.position.set(cp.x, cp.y, cp.z);
+          camera.rotation.set(cp.pitch * DEG, 0, cp.roll * DEG, "YXZ");
+          camera.fov = cp.fov;
+          camera.near = clamp(cp.y * 0.12, 0.04, 25);
+          camera.far = 3200;
+          camera.updateProjectionMatrix();
+          camera.updateMatrixWorld();
+
+          // light: sun → engine
+          const g = ease.sineInOut(sat01((t - (3.6 + SH)) / 1.8));
+          keyDir.copy(dirSun).lerp(dirEngine, g).normalize();
+          key.color.copy(PAL.sun).lerp(PAL.engine, g);
+          key.intensity = 3.2;
+          key.shadow.radius = lerp(7, 1, g);
+          const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          let center;
+          if (fwd.y < -0.05) { const k = -cp.y / fwd.y; center = new THREE.Vector3(cp.x + fwd.x * k, 0, cp.z + fwd.z * k); }
+          else center = new THREE.Vector3(cp.x, 0, cp.z - 12);
+          const half = clamp(cp.y * 0.95 + 13, 16, 190);
+          key.target.position.copy(center);
+          key.position.copy(center).addScaledVector(keyDir, 400);
+          const sc = key.shadow.camera;
+          sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.near = 10; sc.far = 900;
+          sc.updateProjectionMatrix();
+          key.target.updateMatrixWorld();
+          rim.target.position.copy(center); rim.position.copy(center).add(new THREE.Vector3(-6, 7, -9));
+          rim.target.updateMatrixWorld();
+          scene.environmentRotation.set(0, 0.18 * t, 0);
+
+          // world → wireframe (4.0 + SH) → void (5.2 + SH)
+          const T_WIRE = 4.0 + SH, T_VOID = 5.2 + SH;
+          const voidK = sat01((t - T_WIRE) / 1.2);
+          skyU.uVoid.value = ease.p2inOut(voidK);
+          sky.visible = voidK < 1;
+          wireMat.opacity = 1 - ease.p2in(voidK);
+          for (const w of world) {
+            const ts = T_WIRE + w.d * 0.02;
+            if (t >= T_VOID) { w.obj.visible = false; continue; }
+            w.obj.visible = true;
+            const wire = t >= ts;
+            w.obj.material = wire ? wireMat : w.solid;
+            w.obj.castShadow = !wire && w.cast;
+          }
+          mortarMat.color.copy(PAL.concrete).multiplyScalar(0.3).lerp(PAL.void, voidK);
+          mortar.visible = t < T_VOID;
+
+          // fog (act 5 depth)
+          if (t > RISE.t0) { scene.fog.near = cp.y * 1.3 + 40; scene.fog.far = cp.y * 3.6 + 100; }
+          else { scene.fog.near = 1e4; scene.fog.far = 2e4; }
+          farU.uFog.value.set(scene.fog.near, scene.fog.far);
+          farU.uTime.value = t;
+          farU.uKeyDir.value.copy(keyDir);
+          farU.uKeyCol.value.copy(key.color).multiplyScalar(key.intensity);
+          farPlane.visible = t > RISE.t0;
+
+          // From 40 m up, the non-mine cells darken and lose a third of their saturation so the
+          // cream mine tiles and their poops read as dots over the whole city. Same formula as
+          // calm() in the far-plane shader, so the seam stays invisible.
+          const calm = ease.p2inOut(sat01((cp.y - 40) / 120));
+          farU.uCalm.value = calm;
+          const calmK = 1 - 0.3 * calm, calmS = 0.6 * calm, mineBoost = 1 + 0.8 * calm;
+
+          // slabs
+          for (let i = 0; i < NC; i++) {
+            let y, r, gC, b;
+            if (sKind[i] === 1) {
+              y = slabTopSidewalk(t, sT[i]);
+              const k = ease.p2inOut(sat01((t - sT[i]) / 0.3));
+              const v = sVar[i];
+              // the wave front flares as each slab lifts, so the 11 m/s ring reads in the grade
+              const flare = 1 + 1.6 * Math.sin(Math.PI * sat01((t - sT[i]) / 0.3));
+              r = lerp(conc.r * v, sGame[i * 3], k) * flare; gC = lerp(conc.g * v, sGame[i * 3 + 1], k) * flare; b = lerp(conc.b * v, sGame[i * 3 + 2], k) * flare;
+              setM(slabArr, i, sX[i], y, sZ[i], 1, 1, 1, 0);
+            } else {
+              const age = t - sT[i];
+              if (!(age > 0)) { setM(slabArr, i, sX[i], -2, sZ[i], 0, 0, 0, 0); r = gC = b = 0; }
+              else {
+                const k = ease.p2out(sat01(age / 0.35));
+                y = 0.07 - 0.8 * (1 - k);
+                const lum = lerp(0.15, 1, k);
+                r = sGame[i * 3] * lum; gC = sGame[i * 3 + 1] * lum; b = sGame[i * 3 + 2] * lum;
+                setM(slabArr, i, sX[i], y, sZ[i], 1, 1, 1, 0);
+              }
+            }
+            if (calm > 0 && !sMine[i]) {
+              const l = 0.2126 * r + 0.7152 * gC + 0.0722 * b;
+              r = lerp(r, l, calmS) * calmK; gC = lerp(gC, l, calmS) * calmK; b = lerp(b, l, calmS) * calmK;
+            } else if (calm > 0) { r *= mineBoost; gC *= mineBoost; b *= mineBoost; }
+            slabColArr[i * 3] = r; slabColArr[i * 3 + 1] = gC; slabColArr[i * 3 + 2] = b;
+          }
+          slabs.instanceMatrix.needsUpdate = true;
+          slabs.instanceColor.needsUpdate = true;
+          const impactTop = slabTopSidewalk(t, T_CRANE);
+
+          // poops
+          const nArr = poopsNear.instanceMatrix.array, fArr = poopsFar.instanceMatrix.array, aArr = aoInst.instanceMatrix.array;
+          let ni = 0, fi = 0;
+          for (let i = 0; i < NP; i++) {
+            const p = pops[i];
+            const st = popState(t, p.t);
+            const arr = p.near ? nArr : fArr, j = p.near ? ni++ : fi++;
+            if (!st) { setM(arr, j, p.x, -5, p.z, 0, 0, 0, 0); setM(aArr, i, p.x, -5, p.z, 0, 0, 0, 0); continue; }
+            // from altitude the far poops grow (stylised: readable as dots at 160 m)
+            const ps = p.near ? p.s : p.s * (1 + 0.8 * calm);
+            const sxz = ps / Math.sqrt(st.sy);
+            setM(arr, j, p.x, 0.07 + st.y, p.z, sxz, ps * st.sy, sxz, p.yaw);
+            const a = sat01((t - p.t) / 0.25);
+            setM(aArr, i, p.x, 0.0705, p.z, ps * a, 1, ps * a, 0);
+          }
+          poopsNear.instanceMatrix.needsUpdate = poopsFar.instanceMatrix.needsUpdate = aoInst.instanceMatrix.needsUpdate = true;
+
+          // the stepped-on poop
+          const squashed = t >= 3.0;
+          impactPoop.position.set(0.03, impactTop, IMPACT_Z + 0.02);
+          impactPoop.scale.set(squashed ? 1.45 : 1, squashed ? 0.32 : 1, squashed ? 1.45 : 1);
+          impactAO.position.set(0.03, impactTop + 0.0008, IMPACT_Z + 0.02);
+          impactAO.scale.setScalar(squashed ? 1.5 : 1);
+
+          // outline: claps on at 3.0, 1.25 → 1 in 3 frames
+          outline.visible = t >= 3.0;
+          if (outline.visible) {
+            const k = sat01((t - 3.0) / 0.1);
+            const s = lerp(1.25, 1, ease.p2out(k));
+            outline.scale.set(s, 1, s);
+            outline.position.y = impactTop + 0.002;
+          }
+
+          // foot
+          const fr = footRig(t);
+          foot.visible = !!fr && t < T_VOID;
+          if (fr) { foot.position.set(fr.x, fr.y + (t >= T_CRANE ? impactTop : 0), fr.z); foot.rotation.set(fr.pitch, 0, 0); }
+
+          // debris rides its slab and shrinks away as the wave turns that slab into a cell
+          for (const D of debris) {
+            const arr = D.mesh.instanceMatrix.array;
+            D.items.forEach((it, j) => {
+              const k = 1 - ease.p2in(sat01((t - it.tw) / 0.25));
+              const s = it.s * k;
+              setM(arr, j, it.x, slabTopSidewalk(t, it.tw), it.z, s, s, s, it.yaw);
+            });
+            D.mesh.instanceMatrix.needsUpdate = true;
+            D.mesh.visible = t < 4.5 + SH;
+          }
+
+          // dust (frozen at 3.0, gone 0.6 s after the wireframe)
+          dustU.uT.value = tf;
+          dustU.uFade.value = 1 - sat01((t - T_WIRE) / 0.6);
+          const dofAmt = 1 - sat01((t - T_CRANE) / 1.4);
+          const K = 14.8 * dofAmt;
+          dustU.uK.value = K;
+
+          // ---- draw
+          renderer.setRenderTarget(rtMain);
+          renderer.setClearColor(PAL.void, 1);
+          renderer.clear();
+          renderer.render(scene, camera);
+
+          dofM.uniforms.tColor.value = rtMain.texture;
+          dofM.uniforms.uNear.value = camera.near; dofM.uniforms.uFar.value = camera.far;
+          dofM.uniforms.uK.value = 14.8; dofM.uniforms.uAmt.value = dofAmt;
+          runPass(dofM, rtDof);
+        }
+
+        // one output frame: SUBFRAMES pure renders across a 180° shutter centred on t, averaged
+        // (motion blur), then bloom and grade once. The frozen beat after the step has nothing
+        // moving in 3D, so it takes one sample.
+        function render(tIn) {
+          const t = clamp(Number(tIn) || 0, 0, DUR);
+          const frozen = t > 3.0 + 4 / 30 && t < T_CRANE - SHUTTER;
+          const n = frozen ? 1 : SUBFRAMES;
+          let src = rtDof.texture;
+          if (n === 1) drawScene(t);
+          else {
+            let prev = rtAccA, cur = rtAccB;
+            for (let k = 0; k < n; k++) {
+              drawScene(clamp(t + (k / (n - 1) - 0.5) * SHUTTER, 0, DUR));
+              accM.uniforms.tPrev.value = prev.texture;
+              accM.uniforms.tCur.value = rtDof.texture;
+              accM.uniforms.uW.value = 1 / n;
+              accM.uniforms.uFirst.value = k === 0 ? 1 : 0;
+              runPass(accM, cur);
+              [prev, cur] = [cur, prev];
+            }
+            src = prev.texture; // the last target written
+          }
+
+          // the bloom threshold moves with GAIN so bloom sees the same light as before
+          compM.uniforms.uGain.value = GAIN;
+          brightM.uniforms.uTh.value = 2.2 / GAIN;
+          brightM.uniforms.t.value = src;
+          brightM.uniforms.uTexel.value.set(1 / W, 1 / H);
+          runPass(brightM, rtB1);
+          blurM.uniforms.t.value = rtB1.texture; blurM.uniforms.uDir.value.set(2 / W, 0); runPass(blurM, rtB2);
+          blurM.uniforms.t.value = rtB2.texture; blurM.uniforms.uDir.value.set(0, 2 / H); runPass(blurM, rtB1);
+          copyM.uniforms.t.value = rtB1.texture; runPass(copyM, rtQ1);
+          blurM.uniforms.t.value = rtQ1.texture; blurM.uniforms.uDir.value.set(4 / W, 0); runPass(blurM, rtQ2);
+          blurM.uniforms.t.value = rtQ2.texture; blurM.uniforms.uDir.value.set(0, 4 / H); runPass(blurM, rtQ1);
+
+          // the horde: its own sub-frames over a wider shutter, averaged like the city's
+          const hordeOn = t > HORDE_ON[0] && t < HORDE_ON[1];
+          compM.uniforms.uHorde.value = hordeOn ? 1 : 0;
+          compM.uniforms.tHorde.value = rtHAccA.texture;
+          if (hordeOn) {
+            let prev = rtHAccA, cur = rtHAccB;
+            for (let k = 0; k < SUBFRAMES; k++) {
+              drawHorde(t + (k / (SUBFRAMES - 1) - 0.5) * HORDE_SHUTTER);
+              accM.uniforms.tPrev.value = prev.texture;
+              accM.uniforms.tCur.value = rtHorde.texture;
+              accM.uniforms.uW.value = 1 / SUBFRAMES;
+              accM.uniforms.uFirst.value = k === 0 ? 1 : 0;
+              runPass(accM, cur);
+              [prev, cur] = [cur, prev];
+            }
+            compM.uniforms.tHorde.value = prev.texture;
+          }
+
+          compM.uniforms.tScene.value = src;
+          compM.uniforms.uFlash.value = t >= 3.0 && t < 3.0 + 1 / 30 ? 0.85 : 0;
+          // desaturation is now a 0.5 s flash on the step (brown and the outline stay), then colour returns
+          const desat = t < 3.0 ? 0 : t < 3.08 ? sat01((t - 3.0) / 0.08) : t < 3.3 ? 1 : 1 - ease.p2inOut(sat01((t - 3.3) / 0.2));
+          const satBase = lerp(1.3, 1.15, ease.sineInOut(sat01((t - (3.6 + SH)) / 1.8)));
+          compM.uniforms.uSat.value = lerp(satBase, 0.15, desat);
+          compM.uniforms.uTone.value = lerp(1, 0.4, ease.sineInOut(sat01((t - (3.6 + SH)) / 1.8)));
+          compM.uniforms.uExposure.value = lerp(2.0, 0.95, ease.sineInOut(sat01((t - (3.6 + SH)) / 1.8))) * lerp(1, 1.3, ease.sineInOut(sat01((t - RISE.t0) / 2.3)));
+          runPass(compM, null);
+        }
+
+        // compile everything once, then draw t=0 (or wherever the seek already is)
+        renderer.compile(scene, camera);
+        api.render = render;
+        render(api.t);
+      }
+    })();
+  </script>
+</template>
